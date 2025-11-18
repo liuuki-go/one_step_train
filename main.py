@@ -2,6 +2,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 from gui.main_frame import MainFrame
 
+
 def main():
     app = QApplication(sys.argv)
     w = MainFrame()

@@ -31,7 +31,10 @@ def _split_indices(n: int, ratios: Tuple[int, int, int]) -> Tuple[List[int], Lis
     return train, val, test
 
 def build_yolo_dataset(src_dir: str, classes_path: str, ratios: Tuple[int, int, int], persist: bool, output_dir: str = None, seed: int = 42):
+    """构建 YOLO 数据集并返回 `(root, yaml_path)`。"""
     random.seed(seed)
+    if persist and not output_dir:
+        raise ValueError("persist 模式下必须提供 output_dir")
     names = load_classes(classes_path)
     pairs = pair_images_and_jsons(src_dir)
     if not pairs:
@@ -66,3 +69,8 @@ def build_yolo_dataset(src_dir: str, classes_path: str, ratios: Tuple[int, int, 
     if not persist and output_dir:
         pass
     return root, yaml_path
+"""数据集构建工具：从标注目录与类文件生成 YOLO 训练集结构。
+
+- 输入：标注根目录、`classes.txt` 路径、比例 (train:val:test)、是否持久化与输出目录。
+- 输出：返回构建后的数据集根目录与 `dataset_config.yaml` 路径。
+"""
