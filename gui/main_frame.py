@@ -1,3 +1,6 @@
+from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QPushButton
 import os
 import sys
 import yaml
@@ -13,6 +16,8 @@ from gui.pages.build_page import BuildPageWidget
 from gui.pages.config_page import ConfigPageWidget
 from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
+from PySide6.QtGui import QIcon
+from constants import SYS_SETTINGS_FILE
 
 class LogThread(QThread):
     line = Signal(str)
@@ -28,46 +33,44 @@ class MainFrame(QMainWindow):
     """主框架：只负责页面路由与信号接线，业务逻辑下沉到各页面或 core 模块。"""
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("一键训练")
-        self.resize(1200, 800)
-        self._init_ui()
-        self.dataset_root = None
+        self.setWindowTitle("OTrain")  #设置程序标题
+        self.resize(1200, 700)  #设置初始窗口大小
+        self._init_ui()  
+        self.dataset_root = None 
         self.dataset_yaml = None
         self.log_thread = None
     
     def _on_page_changed(self, idx):
         self.console.setVisible(idx != 3)
     
-    
-    
-    
     def _init_ui(self):
+        """初始化用户界面，包括布局、组件和信号槽连接。"""
         cw = QWidget()
-        self.setCentralWidget(cw)
-        root = QHBoxLayout(cw)
-        left_container = QWidget()
+        self.setCentralWidget(cw) #设置主窗口的中心部件为cw
+        root = QHBoxLayout(cw) #创建主水平布局
+        left_container = QWidget() #创建左侧容器
         left_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:1px solid #e1e4e8;}")
         left = QVBoxLayout(left_container)
         center = QVBoxLayout()
         right = QVBoxLayout()
-        left_container.setFixedWidth(160)
+        left_container.setFixedWidth(120)
         root.addWidget(left_container, 1)
         root.addLayout(center, 2)
         root.addLayout(right, 1)
         setup_menu(self, self._open_sys_settings, self._set_lang)
+        #设置左侧功能区的按钮和样式
         btn_one = QPushButton("一键训练")
-        btn_build = QPushButton("数据集构建")
+        btn_build = QPushButton("构建数据")
         btn_run = QPushButton("开始训练")
         btn_cfg = QPushButton("训练配置")
-        st = self.style()
-        btn_one.setIcon(st.standardIcon(QtWidgets.QStyle.SP_MediaPlay))
-        btn_build.setIcon(st.standardIcon(QtWidgets.QStyle.SP_DirIcon))
-        btn_run.setIcon(st.standardIcon(QtWidgets.QStyle.SP_MediaPlay))
-        btn_cfg.setIcon(st.standardIcon(QtWidgets.QStyle.SP_FileDialogDetailedView))
+        btn_one.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
+        btn_build.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
+        btn_run.setIcon(QIcon("gui/icon/action_model_icon/run_train.png"))
+        btn_cfg.setIcon(QIcon("gui/icon/action_model_icon/config.png"))
         for b in (btn_one, btn_build, btn_run, btn_cfg):
             b.setCheckable(True)
             b.setStyleSheet(
-                "QPushButton{font-size:16px;padding:12px 14px;text-align:left;border-radius:10px;}"
+                "QPushButton{font-size:12px;padding:10px 10px;text-align:left;border-radius:10px;}"
                 "QPushButton:checked{background:#e6f0ff;color:#0366d6;}"
                 "QPushButton:hover{background:#f0f6ff;}"
             )
@@ -75,39 +78,46 @@ class MainFrame(QMainWindow):
         left.addWidget(btn_build)
         left.addWidget(btn_run)
         left.addWidget(btn_cfg)
-        left.addStretch(1)
-        group = QtWidgets.QButtonGroup(self)
-        group.setExclusive(True)
-        for i, b in enumerate((btn_one, btn_build, btn_run, btn_cfg)):
-            group.addButton(b, i)
-        btn_one.setChecked(True)
-        group.idClicked.connect(lambda i: self.stack.setCurrentIndex(i))
-        self.stack = QStackedWidget()
+        left.addStretch(1) #添加一个弹性空间，用于分隔按钮和底部区域
+        
+        #创建一个按钮组，用于管理左侧功能区的按钮，确保只能选中一个
+        action_group = QtWidgets.QButtonGroup(self)
+        action_group.setExclusive(True) #设置按钮组为"互斥"模式
+        for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, btn_cfg)):  
+            action_group.addButton(b, i)
+        btn_build.setChecked(True) #默认选中一键训练按钮
+        action_group.idClicked.connect(lambda i: self.stack.setCurrentIndex(i))
+    
+        self.stack = QStackedWidget() #创建一个栈式窗口部件，用于切换不同的页面，QStackedWidget 是一个容器，可以包含多个子部件，但同一时间只显示一个
+
         center.addWidget(self.stack)
         self.console = QTextEdit()
-        self.console.setReadOnly(True)
+        self.console.setReadOnly(True)    
         self.console.setLineWrapMode(QTextEdit.NoWrap)
         self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:12px;}')
         center.addWidget(self.console)
+        #创建页面ui，每个页面都是一个QWidget
         self.page_one = OneClickPageWidget()
         self.page_build = BuildPageWidget()
         self.page_run = RunPageWidget()
         self.page_cfg = ConfigPageWidget()
-        self.stack.addWidget(self.page_one)
-        self.stack.addWidget(self.page_build)
-        self.stack.addWidget(self.page_run)
-        self.stack.addWidget(self.page_cfg)
+        self.stack.addWidget(self.page_one) #索引0，一键训练页面
+        self.stack.addWidget(self.page_build) #索引1，构建数据页面
+        self.stack.addWidget(self.page_run) #索引2，开始训练页面
+        self.stack.addWidget(self.page_cfg) #索引3，训练配置页面
         # idClicked handles switching
+        self.stack.setCurrentIndex(1) #默认选中构建数据页面
         self.stack.currentChanged.connect(self._on_page_changed)
+        
+        #创建右侧监控器，用于显示训练进度和日志
         self.monitor = MonitorWidget()
         right.addWidget(self.monitor)
         try:
-            cfg = yaml.safe_load(open(os.path.join(os.getcwd(), "sys_config.yaml"), "r", encoding="utf-8")) or {}
+            cfg = yaml.safe_load(open(os.path.join(os.getcwd(), SYS_SETTINGS_FILE), "r", encoding="utf-8")) or {}
             wsl = cfg.get("wsl", {})
             cp = None
             if isinstance(wsl, dict):
                 cp = wsl.get("conda", {}).get("env_path") if isinstance(wsl.get("conda"), dict) else None
-            # 运行页从配置读取 Conda 路径，无需预填
         except Exception:
             pass
         self.page_run.runRequested.connect(self._on_run_requested)
