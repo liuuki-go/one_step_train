@@ -4,6 +4,7 @@ import os
 import re
 import yaml
 from ultralytics import YOLO
+import time
 
 
 def _to_wsl(p: str) -> str:
@@ -35,12 +36,24 @@ def _normalize_yaml(yaml_path: str) -> None:
     except Exception:
         pass
 
-def train_with_cfg(data: str):
+def train_with_cfg(data: str, export_path: str):
     model = YOLO("models/yolo11n.pt")
+    ts = time.strftime("%y-%m-%d_%H:%M", time.localtime())
+    print(f"export_path: {export_path}")
     train_results = model.train(
         cfg="train/config/train_conf.yaml",
+        project=export_path,
+        name=ts,
         data=data,
     )
+    model.export(
+    format="onnx",
+    imgsz=640,
+    dynamic=True,
+    simplify=True,
+    opset=18,
+    )
+
     return train_results
 
 
@@ -48,13 +61,15 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument("--data")
     p.add_argument("--dataset")
+    p.add_argument("--export_path")
     a = p.parse_args()
     data_arg = a.data
+    export_path = a.export_path or os.path.join(os.getcwd(), "runs")
     if a.dataset:
         data_arg = os.path.join(a.dataset, "dataset_config.yaml")
     if os.path.exists(data_arg):
         _normalize_yaml(data_arg)
     if not data_arg:
         raise SystemExit("missing --dataset folder or --data yaml")
-    train_with_cfg(data_arg)
+    train_with_cfg(data_arg, export_path)
 

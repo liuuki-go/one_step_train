@@ -4,14 +4,18 @@ from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea
 from PySide6.QtGui import QPainter, QColor, QPen
 from PySide6.QtCore import QRectF
+from PySide6.QtGui import QIcon
 
 class RingGauge(QWidget):
+    '''
+    环形进度条
+    '''
     def __init__(self, color: QColor):
         super().__init__()
         self._value = 0.0
         self._color = color
-        self.setMinimumSize(100, 100)
-        self.setMaximumSize(120, 120)
+        self.setMinimumSize(60, 60)
+        self.setMaximumSize(60, 60)
     def setValue(self, v: float):
         self._value = max(0.0, min(100.0, float(v)))
         self.update()
@@ -36,6 +40,9 @@ class RingGauge(QWidget):
         p.drawText(self.rect(), QtCore.Qt.AlignCenter, f"{self._value:.1f}%")
 
 class MetricBlock(QWidget):
+    '''
+    指标块组件
+    '''
     def __init__(self, title: str, icon, caption: str):
         super().__init__()
         self.setStyleSheet("QWidget{background:#fff;border:1px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
@@ -43,9 +50,9 @@ class MetricBlock(QWidget):
         left = QVBoxLayout()
         top = QHBoxLayout()
         self.icon = QLabel()
-        self.icon.setPixmap(icon.pixmap(18, 18))
+        self.icon.setPixmap(icon.pixmap(30, 30))
         self.title = QLabel(title)
-        self.title.setStyleSheet("QLabel{font-weight:600;}")
+        self.title.setStyleSheet("QLabel{font-weight:1000;}")
         top.addWidget(self.icon)
         top.addWidget(self.title)
         top.addStretch(1)
@@ -80,8 +87,8 @@ class MonitorWidget(QWidget):
         self.scroll.setWidgetResizable(True)
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
-        self.cpu_block = MetricBlock("CPU", st.standardIcon(QtWidgets.QStyle.SP_ComputerIcon), "CPU使用率")
-        self.mem_block = MetricBlock("内存", st.standardIcon(QtWidgets.QStyle.SP_DriveHDIcon), "内存使用率")
+        self.cpu_block = MetricBlock("CPU", QIcon("gui\icon\monitor_icon\host_cpu.png"), "CPU使用率")
+        self.mem_block = MetricBlock("内存", QIcon("gui\icon\monitor_icon\host_memory.png"), "内存使用率")
         self.container_layout.addWidget(self.cpu_block)
         self.container_layout.addWidget(self.mem_block)
         self.gpu_blocks = []
@@ -120,11 +127,11 @@ class MonitorWidget(QWidget):
         st = self.style()
         if self.nvml and self.gpu_count > 0:
             for i in range(self.gpu_count):
-                blk = MetricBlock(f"GPU {i}", st.standardIcon(QtWidgets.QStyle.SP_MediaVolume), "显存使用率")
+                blk = MetricBlock(f"GPU {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                 self.gpu_blocks.append(blk)
                 self.container_layout.addWidget(blk)
         else:
-            blk = MetricBlock("GPU", st.standardIcon(QtWidgets.QStyle.SP_MediaVolume), "显存使用率")
+            blk = MetricBlock("GPU", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
             self.gpu_blocks.append(blk)
             self.container_layout.addWidget(blk)
     def _ensure_gpu_blocks(self):
@@ -134,11 +141,11 @@ class MonitorWidget(QWidget):
                 b.setParent(None)
             self.gpu_blocks = []
             for i in range(self.gpu_count):
-                blk = MetricBlock(f"GPU {i}", st.standardIcon(QtWidgets.QStyle.SP_MediaVolume), "显存使用率")
+                blk = MetricBlock(f"GPU {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                 self.gpu_blocks.append(blk)
                 self.container_layout.addWidget(blk)
         elif (not self.nvml or self.gpu_count == 0) and len(self.gpu_blocks) == 0:
-            blk = MetricBlock("GPU", st.standardIcon(QtWidgets.QStyle.SP_MediaVolume), "显存使用率")
+            blk = MetricBlock("GPU", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
             self.gpu_blocks.append(blk)
             self.container_layout.addWidget(blk)
     def _query_smi_all(self):
@@ -167,6 +174,7 @@ class MonitorWidget(QWidget):
         return None
     def refresh(self):
         cpu = psutil.cpu_percent(interval=None)
+        freq = psutil.cpu_freq(percpu=False).current / 1000.0
         vm = psutil.virtual_memory()
         mem = vm.percent
         gpu = None
@@ -192,19 +200,19 @@ class MonitorWidget(QWidget):
             cpu_temp = None
         mem_used = vm.used / (1024**3)
         mem_total = vm.total / (1024**3)
-        self.cpu_block.value.setText(f"CPU利用率：{cpu:.1f}%")
+        self.cpu_block.value.setText(f"利用率：{cpu:.1f}%")
         self.cpu_block.gauge.setValue(cpu)
         self.cpu_block.gauge.setColor(self._color_for("cpu", cpu))
-        cores = psutil.cpu_count(logical=True) or 0
-        freq = None
-        try:
-            freq = self._query_cpu_freq_windows()
-            if freq is None:
-                fr = psutil.cpu_freq()
-                if fr:
-                    freq = fr.current / 1000.0
-        except Exception:
-            freq = None
+        cores = psutil.cpu_count(logical=False) or 0
+        # freq = None
+        # try:
+        #     freq = self._query_cpu_freq_windows()
+        #     if freq is None:
+        #         fr = psutil.cpu_freq()
+        #         if fr:
+        #             freq = fr.current / 1000.0
+        # except Exception:
+        #     freq = None
         freq_txt = f"{freq:.2f}GHz" if isinstance(freq, float) else "-"
         self.cpu_block.detail.setText(f"核心数 {cores} | 频率 {freq_txt}")
         self.mem_block.value.setText(f"内存使用率：{mem:.1f}%")
@@ -255,8 +263,7 @@ class MonitorWidget(QWidget):
             try:
                 lines = self._query_smi_all()
                 while len(self.gpu_blocks) < len(lines):
-                    st = self.style()
-                    nb = MetricBlock(f"GPU {len(self.gpu_blocks)}", st.standardIcon(QtWidgets.QStyle.SP_MediaVolume), "显存使用率")
+                    nb = MetricBlock(f"GPU {len(self.gpu_blocks)}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                     self.gpu_blocks.append(nb)
                     self.container_layout.addWidget(nb)
                 for i, ln in enumerate(lines):

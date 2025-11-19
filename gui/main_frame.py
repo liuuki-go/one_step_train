@@ -34,18 +34,45 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("OTrain")  #设置程序标题
-        self.resize(1200, 700)  #设置初始窗口大小
+        self.resize(1500, 700)  #设置初始窗口大小
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
         self.log_thread = None
-    
+        
     def _on_page_changed(self, idx):
         self.console.setVisible(idx != 3)
     
+    def _set_run_button_loading(self, loading: bool):
+        try:
+            if loading:
+                self.page_run.btn_run_train.setEnabled(False)
+                self.page_run.btn_run_train.setText("训练中")
+            else:
+                self.page_run.btn_run_train.setEnabled(True)
+                self.page_run.btn_run_train.setText("开始训练")
+        except Exception:
+            pass
+    def _set_one_button_loading(self, loading: bool):
+        try:
+            if loading:
+                self.page_one.btn_run_one.setEnabled(False)
+                self.page_one.btn_run_one.setText("训练中")
+            else:
+                self.page_one.btn_run_one.setEnabled(True)
+                self.page_one.btn_run_one.setText("一键训练")
+        except Exception:
+            pass
+
+    def _on_train_done(self, rc: int):
+        self._append_log(f"训练结束 {rc}")
+        self._set_run_button_loading(False)
+        self._set_one_button_loading(False)
+
     def _init_ui(self):
         """初始化用户界面，包括布局、组件和信号槽连接。"""
         cw = QWidget()
+        cw.setStyleSheet("QWidget{background:#F8FAFC;}")
         self.setCentralWidget(cw) #设置主窗口的中心部件为cw
         root = QHBoxLayout(cw) #创建主水平布局
         left_container = QWidget() #创建左侧容器
@@ -57,6 +84,7 @@ class MainFrame(QMainWindow):
         root.addWidget(left_container, 1)
         root.addLayout(center, 2)
         root.addLayout(right, 1)
+        
         setup_menu(self, self._open_sys_settings, self._set_lang)
         #设置左侧功能区的按钮和样式
         btn_one = QPushButton("一键训练")
@@ -85,17 +113,22 @@ class MainFrame(QMainWindow):
         action_group.setExclusive(True) #设置按钮组为"互斥"模式
         for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, btn_cfg)):  
             action_group.addButton(b, i)
-        btn_build.setChecked(True) #默认选中一键训练按钮
+
+        btn_run.setChecked(True) #默认选中一键训练按钮
         action_group.idClicked.connect(lambda i: self.stack.setCurrentIndex(i))
     
         self.stack = QStackedWidget() #创建一个栈式窗口部件，用于切换不同的页面，QStackedWidget 是一个容器，可以包含多个子部件，但同一时间只显示一个
+        # self.stack.setStyleSheet("QWidget{background:#f6f8fa;border-right:1px solid #e1e4e8;}")
 
         center.addWidget(self.stack)
         self.console = QTextEdit()
         self.console.setReadOnly(True)    
         self.console.setLineWrapMode(QTextEdit.NoWrap)
-        self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:12px;}')
+        self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:12px;border: 5px solid #FC5185;background-color: #ffffff;}')
         center.addWidget(self.console)
+        #控制比例，使控制台占比30%
+        center.setStretch(0, 1)
+        center.setStretch(1, 1)
         #创建页面ui，每个页面都是一个QWidget
         self.page_one = OneClickPageWidget()
         self.page_build = BuildPageWidget()
@@ -106,7 +139,7 @@ class MainFrame(QMainWindow):
         self.stack.addWidget(self.page_run) #索引2，开始训练页面
         self.stack.addWidget(self.page_cfg) #索引3，训练配置页面
         # idClicked handles switching
-        self.stack.setCurrentIndex(1) #默认选中构建数据页面
+        self.stack.setCurrentIndex(2) #默认选中构建数据页面
         self.stack.currentChanged.connect(self._on_page_changed)
         
         #创建右侧监控器，用于显示训练进度和日志
@@ -129,23 +162,21 @@ class MainFrame(QMainWindow):
         self.dataset_root = root
         self.dataset_yaml = yaml_path
         self._append_log(f"数据集构建完成 {root}")
-    def _on_run_requested(self, dp: str, conda_base: str):
-        use_dp = dp.strip() or (self.dataset_root or "")
-        if not use_dp:
-            self._append_log("缺少数据集文件夹")
-            return
+
+    def _on_run_requested(self, dp: str, conda_base: str, export_path: str):
         start_py = os.path.join(os.getcwd(), "train", "start.py")
-        cb = conda_base.strip() or None
-        cmd = build_train_cmd(start_py, use_dp, conda_base=cb)
+        cmd = build_train_cmd(start_py, dp, conda_base=conda_base, export_path=export_path)
         self._append_log("启动训练")
         try:
             self._append_log("命令: " + " ".join(cmd))
         except Exception:
             pass
+        self._set_run_button_loading(True)
         self.log_thread = LogThread(cmd)
         self.log_thread.line.connect(self._append_log)
-        self.log_thread.done.connect(lambda rc: self._append_log(f"训练结束 {rc}"))
+        self.log_thread.done.connect(self._on_train_done)
         self.log_thread.start()
+        
     def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str | None):
         """处理一键训练请求：构建数据集并启动训练（使用系统配置的 conda 路径回退）。"""
         if not src or not cls:
@@ -170,9 +201,10 @@ class MainFrame(QMainWindow):
             self._append_log("命令: " + " ".join(cmd))
         except Exception:
             pass
+        self._set_one_button_loading(True)
         self.log_thread = LogThread(cmd)
         self.log_thread.line.connect(self._append_log)
-        self.log_thread.done.connect(lambda rc: self._append_log(f"训练结束 {rc}"))
+        self.log_thread.done.connect(self._on_train_done)
         self.log_thread.start()
     
     def _set_lang(self, lang: str):

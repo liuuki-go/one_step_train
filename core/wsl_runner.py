@@ -11,7 +11,7 @@ def win_to_wsl_path(p: str) -> str:
     rest = p[2:].lstrip("\\/").replace("\\", "/")
     return f"/mnt/{drive}/{rest}"
 
-def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", conda_base: Optional[str] = None) -> List[str]:
+def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", conda_base: Optional[str] = None, export_path: Optional[str] = None) -> List[str]:
     """构建在 WSL 中执行训练的命令行。
 
     - 若提供 `conda_base`，优先使用该路径下的 `envs/<env_name>/bin/python` 或 `condabin/conda`。
@@ -19,14 +19,16 @@ def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", co
     """
     sp = win_to_wsl_path(start_py)
     dd = win_to_wsl_path(dataset_dir)
+    ep = win_to_wsl_path(export_path) 
+    extra = f" --export_path \"{ep}\"" if ep else ""
     if conda_base:
         base = conda_base.rstrip("/")
         py = base + f"/envs/{env_name}/bin/python"
         cb = base + "/condabin/conda"
         cmd = (
-            f"if [ -x \"{py}\" ]; then \"{py}\" \"{sp}\" --dataset \"{dd}\"; "
-            f"elif [ -x \"{cb}\" ]; then \"{cb}\" run -n {env_name} python \"{sp}\" --dataset \"{dd}\"; "
-            f"else python3 \"{sp}\" --dataset \"{dd}\"; fi"
+            f"if [ -x \"{py}\" ]; then \"{py}\" \"{sp}\" --dataset \"{dd}\"{extra}; "
+            f"elif [ -x \"{cb}\" ]; then \"{cb}\" run -n {env_name} python \"{sp}\" --dataset \"{dd}\"{extra}; "    
+            f"else python3 \"{sp}\" --dataset \"{dd}\"{extra}; fi"
         )
         return ["wsl", "bash", "-lc", cmd]
     sh = (
@@ -34,10 +36,10 @@ def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", co
         "CONDA_BIN=''; for b in $HOME/enter $HOME/miniconda3 $HOME/anaconda3 $HOME/mambaforge $HOME/miniforge3 /opt/conda; do "
         "  if [ -x \"$b/condabin/conda\" ]; then CONDA_BIN=\"$b/condabin/conda\"; break; fi; "
         "done; "
-        "if [ -n \"$CONDA_BIN\" ]; then \"$CONDA_BIN\" run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"; "
+        "if [ -n \"$CONDA_BIN\" ]; then \"$CONDA_BIN\" run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
         "else "
-        "  if command -v micromamba >/dev/null 2>&1; then micromamba run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"; "
-        f"  else python3 \"{sp}\" --dataset \"{dd}\"; fi; "
+        "  if command -v micromamba >/dev/null 2>&1; then micromamba run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
+        f"  else python3 \"{sp}\" --dataset \"{dd}\"{extra}; fi; "  
         "fi"
     )
     return ["wsl", "bash", "-lc", sh]
