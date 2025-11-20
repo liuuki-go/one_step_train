@@ -2,6 +2,7 @@ import os
 import yaml
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QScrollArea, QFormLayout
+from gui.style.CheckButtonStyleManager import StyledCheckBox
 
 class ConfigPageWidget(QWidget):
     """训练配置页：加载 YAML，生成编辑器，支持保存与导出。"""

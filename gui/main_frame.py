@@ -5,8 +5,8 @@ import os
 import sys
 import yaml
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QStackedWidget
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QStackedWidget, QSizePolicy
+from PySide6.QtCore import QThread, Signal,Qt
 from core.dataset_builder import build_yolo_dataset
 from core.wsl_runner import build_train_cmd, run_stream
 from gui.pages.monitor_widget import MonitorWidget
@@ -16,8 +16,9 @@ from gui.pages.build_page import BuildPageWidget
 from gui.pages.config_page import ConfigPageWidget
 from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from constants import SYS_SETTINGS_FILE
+
 
 class LogThread(QThread):
     line = Signal(str)
@@ -33,8 +34,8 @@ class MainFrame(QMainWindow):
     """主框架：只负责页面路由与信号接线，业务逻辑下沉到各页面或 core 模块。"""
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("OTrain")  #设置程序标题
-        self.resize(1500, 700)  #设置初始窗口大小
+        self.setWindowTitle("oneST")  #设置程序标题
+        self.setFixedSize(1500, 700)  #设置初始窗口大小
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
@@ -76,25 +77,76 @@ class MainFrame(QMainWindow):
         self.setCentralWidget(cw) #设置主窗口的中心部件为cw
         root = QHBoxLayout(cw) #创建主水平布局
         left_container = QWidget() #创建左侧容器
-        left_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:1px solid #e1e4e8;}")
+        left_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:2px solid #e1e4e8;}")
         left = QVBoxLayout(left_container)
+        left.setContentsMargins(0, 0, 0, 0)
+
+        
+        function_title_container = QWidget()
+        function_title_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:0px solid #e1e4e8;}")
+        function_title_layout = QHBoxLayout(function_title_container);function_title_layout.setSpacing(1);function_title_layout.setContentsMargins(0, 0, 0, 0) 
+        lb_function_title_icon = QLabel()
+        lb_f_icon=QPixmap("gui/icon/action_model_icon/子功能区.png").scaled(25, 25,Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        lb_function_title_icon.setPixmap(lb_f_icon);lb_function_title_icon.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        lb_function_title = QLabel("功能区")
+        lb_function_title.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        lb_function_title.setStyleSheet("QLabel{font-size:20px;font-weight:bold;color:#24292f;margin:0px 0px 0px 5px;}")
+        function_title_layout.addWidget(lb_function_title_icon)
+        function_title_layout.addWidget(lb_function_title)
+        function_title_layout.addStretch(1)
+
+        #左侧功能栏
+        left_functions_container = QWidget()
+        left_functions_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:2px solid #e1e4e8;}")
+        left_functions_layout = QVBoxLayout(left_functions_container)
+
+        # 工具区标题
+        function_tools_container = QWidget()
+        function_tools_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:0px solid #e1e4e8;}")
+        function_tools_layout = QHBoxLayout(function_tools_container);function_tools_layout.setSpacing(1);function_tools_layout.setContentsMargins(0, 0, 15, 0) 
+        lb_tools_title_icon = QLabel()
+        lb_t_icon=QPixmap("gui/icon/action_model_icon/tools.png").scaled(25, 25,Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        lb_tools_title_icon.setPixmap(lb_t_icon);lb_tools_title_icon.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        lb_tools_title = QLabel("工具区")
+        lb_tools_title.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        lb_tools_title.setStyleSheet("QLabel{font-size:20px;font-weight:bold;color:#24292f;margin:0px 0px 0px 5px;}")
+        function_tools_layout.addWidget(lb_tools_title_icon)
+        function_tools_layout.addWidget(lb_tools_title)
+        function_tools_layout.addStretch(1)
+
+    
+
+        #左侧工具栏
+        left_tools_container = QWidget()
+        left_tools_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:2px solid #e1e4e8;}")
+        left_tools_layout = QVBoxLayout(left_tools_container)
+     
+        left.addWidget(function_title_container)  # 加入功能栏标题
+        left.addWidget(left_functions_container) # 加入功能栏区域
+        left.addWidget(function_tools_container) # 加入工具区标题
+        left.addWidget(left_tools_container) # 加入工具栏区域
+        left.addStretch(1)
+
+
+
+
+       
         center = QVBoxLayout()
+        center.setContentsMargins(0, 0, 0, 0)
+        center.setSpacing(0)
         right = QVBoxLayout()
         left_container.setFixedWidth(120)
-        root.addWidget(left_container, 1)
-        root.addLayout(center, 2)
-        root.addLayout(right, 1)
+        root.addWidget(left_container)
+        root.addLayout(center, 7.5)
+        root.addLayout(right, 2.5)
         
         setup_menu(self, self._open_sys_settings, self._set_lang)
+
         #设置左侧功能区的按钮和样式
-        btn_one = QPushButton("一键训练")
-        btn_build = QPushButton("构建数据")
-        btn_run = QPushButton("开始训练")
-        btn_cfg = QPushButton("训练配置")
-        btn_one.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
-        btn_build.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
-        btn_run.setIcon(QIcon("gui/icon/action_model_icon/run_train.png"))
-        btn_cfg.setIcon(QIcon("gui/icon/action_model_icon/config.png"))
+        btn_one = QPushButton("一键训练"); btn_one.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
+        btn_build = QPushButton("构建数据"); btn_build.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
+        btn_run = QPushButton("开始训练") ;btn_run.setIcon(QIcon("gui/icon/action_model_icon/run_train.png"))
+        btn_cfg = QPushButton("训练配置"); btn_cfg.setIcon(QIcon("gui/icon/action_model_icon/config.png"))
         for b in (btn_one, btn_build, btn_run, btn_cfg):
             b.setCheckable(True)
             b.setStyleSheet(
@@ -102,11 +154,19 @@ class MainFrame(QMainWindow):
                 "QPushButton:checked{background:#e6f0ff;color:#0366d6;}"
                 "QPushButton:hover{background:#f0f6ff;}"
             )
-        left.addWidget(btn_one)
-        left.addWidget(btn_build)
-        left.addWidget(btn_run)
-        left.addWidget(btn_cfg)
-        left.addStretch(1) #添加一个弹性空间，用于分隔按钮和底部区域
+        left_functions_layout.addWidget(btn_one)
+        left_functions_layout.addWidget(btn_build)
+        left_functions_layout.addWidget(btn_run)
+        left_functions_layout.addWidget(btn_cfg)
+        left_functions_layout.addStretch(1)
+        #设置左侧功能区按钮
+
+        btn_tool_1 = QPushButton("btn_tool_1"); btn_tool_1.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
+        btn_tool_2 = QPushButton("btn_tool_2"); btn_tool_2.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
+        left_tools_layout.addWidget(btn_tool_1)
+        left_tools_layout.addWidget(btn_tool_2)
+        left_tools_layout.addStretch(1)
+
         
         #创建一个按钮组，用于管理左侧功能区的按钮，确保只能选中一个
         action_group = QtWidgets.QButtonGroup(self)
@@ -114,21 +174,20 @@ class MainFrame(QMainWindow):
         for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, btn_cfg)):  
             action_group.addButton(b, i)
 
-        btn_run.setChecked(True) #默认选中一键训练按钮
+        btn_one.setChecked(True) #默认选中一键训练按钮
         action_group.idClicked.connect(lambda i: self.stack.setCurrentIndex(i))
     
         self.stack = QStackedWidget() #创建一个栈式窗口部件，用于切换不同的页面，QStackedWidget 是一个容器，可以包含多个子部件，但同一时间只显示一个
-        # self.stack.setStyleSheet("QWidget{background:#f6f8fa;border-right:1px solid #e1e4e8;}")
-
-        center.addWidget(self.stack)
         self.console = QTextEdit()
         self.console.setReadOnly(True)    
-        self.console.setLineWrapMode(QTextEdit.NoWrap)
+        self.console.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:12px;border: 5px solid #FC5185;background-color: #ffffff;}')
+        self.console.setFixedHeight(240)
+        center.addWidget(self.stack)
+        center.addItem(QtWidgets.QSpacerItem(0, 20, QSizePolicy.Minimum, QSizePolicy.Fixed))
         center.addWidget(self.console)
-        #控制比例，使控制台占比30%
-        center.setStretch(0, 1)
-        center.setStretch(1, 1)
+
+
         #创建页面ui，每个页面都是一个QWidget
         self.page_one = OneClickPageWidget()
         self.page_build = BuildPageWidget()
@@ -139,7 +198,7 @@ class MainFrame(QMainWindow):
         self.stack.addWidget(self.page_run) #索引2，开始训练页面
         self.stack.addWidget(self.page_cfg) #索引3，训练配置页面
         # idClicked handles switching
-        self.stack.setCurrentIndex(2) #默认选中构建数据页面
+        self.stack.setCurrentIndex(0) #默认选中构建数据页面
         self.stack.currentChanged.connect(self._on_page_changed)
         
         #创建右侧监控器，用于显示训练进度和日志
@@ -177,6 +236,8 @@ class MainFrame(QMainWindow):
         self.log_thread.done.connect(self._on_train_done)
         self.log_thread.start()
         
+
+        
     def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str | None):
         """处理一键训练请求：构建数据集并启动训练（使用系统配置的 conda 路径回退）。"""
         if not src or not cls:
@@ -206,6 +267,29 @@ class MainFrame(QMainWindow):
         self.log_thread.line.connect(self._append_log)
         self.log_thread.done.connect(self._on_train_done)
         self.log_thread.start()
+
+    def _limit_lines(self):
+        """裁剪超出最大行数的内容，保留最后max_lines行"""
+        # 断开信号避免递归触发
+        # 设置触发行数（可根据需求调整，比如1000行）
+        max_lines = 3000
+        #设置保留行数
+        save_lines = 2000
+        self.console.textChanged.disconnect(self._limit_lines)
+        # 获取所有行并分割
+        text = self.console.toPlainText()
+        lines = text.split('\n')
+        
+        # 若行数超过最大值，截取后max_lines行
+        if len(lines) > max_lines:
+            lines = lines[-save_lines:]  # 保留save_lines行
+            new_text = '\n'.join(lines)
+            self.console.setPlainText(new_text)
+            # 滚动到最后一行（保持控制台最新内容可见）
+            self.console.moveCursor(self.console.textCursor().End)
+        
+        # 重新连接信号
+        self.console.textChanged.connect(self._limit_lines)
     
     def _set_lang(self, lang: str):
         if lang == "en":
@@ -216,6 +300,8 @@ class MainFrame(QMainWindow):
             pass
     def _append_log(self, s: str):
         self.console.append(s)
+        # 触发行数裁剪
+        self._limit_lines()
     
     
     def _open_sys_settings(self):

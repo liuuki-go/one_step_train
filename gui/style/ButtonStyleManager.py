@@ -14,8 +14,8 @@ class ButtonStyleManager:
                 font-weight: bold;
                 font-size: 16px;
                 border-radius: 10px;
-                min-width: 180px;
-                min-height: 48px;
+                min-width: 150px;
+                min-height: 40px;
                 border: none;
                 padding:10px 10px;
             }
@@ -38,8 +38,8 @@ class ButtonStyleManager:
                 font-weight: normal;
                 font-size: 12px;
                 border-radius: 10px;
-                min-width: 70px;
-                min-height: 30px;
+                min-width: 80px;
+                min-height: 20px;
                 border: 2px solid #e1e4e8;
                 padding:2px 2px;
             }

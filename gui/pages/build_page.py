@@ -92,7 +92,7 @@ class BuildPageWidget(QWidget):
         total = train + val + test
         # 检查总和是否为0或大于10
         if total != 10:
-            self.lbl_error.setText("警告：比例总和需要为10，否则无法开启构建")
+            self.lbl_error.setText(f"警告：比例总和需要为10，否则无法开启构建，当前总和为{total}")
             self.lbl_error.setVisible(True)
             self.btn_build.setEnabled(False)
         else:

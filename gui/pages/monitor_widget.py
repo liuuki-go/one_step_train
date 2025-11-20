@@ -52,12 +52,12 @@ class MetricBlock(QWidget):
         self.icon = QLabel()
         self.icon.setPixmap(icon.pixmap(30, 30))
         self.title = QLabel(title)
-        self.title.setStyleSheet("QLabel{font-weight:1000;}")
+        self.title.setStyleSheet("QLabel{font-weight:500;}")
         top.addWidget(self.icon)
         top.addWidget(self.title)
         top.addStretch(1)
-        self.value = QLabel("-")
-        self.value.setStyleSheet("QLabel{font-size:18px;padding:0 8px;}")
+        self.value = QLabel("")
+        self.value.setStyleSheet("QLabel{font-size:15px;padding:0 8px;}")
         self.detail = QLabel("")
         self.detail.setStyleSheet("QLabel{color:#666;padding:0 8px 8px;}")
         left.addLayout(top)
@@ -69,8 +69,8 @@ class MetricBlock(QWidget):
         self.gauge = RingGauge(QColor(3, 102, 214))
         self.gauge_title = QLabel(caption)
         self.gauge_title.setStyleSheet("QLabel{color:#666;}")
-        gauge_box.addWidget(self.gauge, alignment=QtCore.Qt.AlignCenter)
-        gauge_box.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignCenter)
+        gauge_box.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        gauge_box.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         root.addLayout(gauge_box)
 
 class MonitorWidget(QWidget):
@@ -87,7 +87,7 @@ class MonitorWidget(QWidget):
         self.scroll.setWidgetResizable(True)
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
-        self.cpu_block = MetricBlock("CPU", QIcon("gui\icon\monitor_icon\host_cpu.png"), "CPU使用率")
+        self.cpu_block = MetricBlock("处理器", QIcon("gui\icon\monitor_icon\host_cpu.png"), "CPU使用率")
         self.mem_block = MetricBlock("内存", QIcon("gui\icon\monitor_icon\host_memory.png"), "内存使用率")
         self.container_layout.addWidget(self.cpu_block)
         self.container_layout.addWidget(self.mem_block)
@@ -127,11 +127,11 @@ class MonitorWidget(QWidget):
         st = self.style()
         if self.nvml and self.gpu_count > 0:
             for i in range(self.gpu_count):
-                blk = MetricBlock(f"GPU {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
+                blk = MetricBlock(f"显卡 {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                 self.gpu_blocks.append(blk)
                 self.container_layout.addWidget(blk)
         else:
-            blk = MetricBlock("GPU", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
+            blk = MetricBlock("显卡", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
             self.gpu_blocks.append(blk)
             self.container_layout.addWidget(blk)
     def _ensure_gpu_blocks(self):
@@ -141,11 +141,11 @@ class MonitorWidget(QWidget):
                 b.setParent(None)
             self.gpu_blocks = []
             for i in range(self.gpu_count):
-                blk = MetricBlock(f"GPU {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
+                blk = MetricBlock(f"显卡 {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                 self.gpu_blocks.append(blk)
                 self.container_layout.addWidget(blk)
         elif (not self.nvml or self.gpu_count == 0) and len(self.gpu_blocks) == 0:
-            blk = MetricBlock("GPU", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
+            blk = MetricBlock("显卡", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
             self.gpu_blocks.append(blk)
             self.container_layout.addWidget(blk)
     def _query_smi_all(self):
@@ -204,15 +204,6 @@ class MonitorWidget(QWidget):
         self.cpu_block.gauge.setValue(cpu)
         self.cpu_block.gauge.setColor(self._color_for("cpu", cpu))
         cores = psutil.cpu_count(logical=False) or 0
-        # freq = None
-        # try:
-        #     freq = self._query_cpu_freq_windows()
-        #     if freq is None:
-        #         fr = psutil.cpu_freq()
-        #         if fr:
-        #             freq = fr.current / 1000.0
-        # except Exception:
-        #     freq = None
         freq_txt = f"{freq:.2f}GHz" if isinstance(freq, float) else "-"
         self.cpu_block.detail.setText(f"核心数 {cores} | 频率 {freq_txt}")
         self.mem_block.value.setText(f"内存使用率：{mem:.1f}%")
@@ -263,7 +254,7 @@ class MonitorWidget(QWidget):
             try:
                 lines = self._query_smi_all()
                 while len(self.gpu_blocks) < len(lines):
-                    nb = MetricBlock(f"GPU {len(self.gpu_blocks)}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
+                    nb = MetricBlock(f"显卡 {len(self.gpu_blocks)}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
                     self.gpu_blocks.append(nb)
                     self.container_layout.addWidget(nb)
                 for i, ln in enumerate(lines):
@@ -274,7 +265,7 @@ class MonitorWidget(QWidget):
                         gm_t = float(parts[2])
                         gt = float(parts[3])
                         blk = self.gpu_blocks[i]
-                        blk.title.setText(f"GPU {i}")
+                        blk.title.setText(f"显卡 {i}")
                         mem_pct = 0.0
                         if gm_t not in (None, 0):
                             mem_pct = gm_u / gm_t * 100.0

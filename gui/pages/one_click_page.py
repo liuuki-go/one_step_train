@@ -1,31 +1,34 @@
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QComboBox, QHBoxLayout, QSpacerItem
+from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QComboBox, QHBoxLayout, QSpacerItem, QSizePolicy
 from gui.style.ButtonStyleManager import StyledButton
+from gui.style.CheckButtonStyleManager import StyledCheckBox
 from PySide6.QtCore import Qt
+
 
 class OneClickPageWidget(QWidget):
     oneClickRequested = Signal(str, str, tuple, bool, object)
     def __init__(self):
         super().__init__()
-        form = QGridLayout(self)
-        form.setHorizontalSpacing(5)
-        form.setVerticalSpacing(15)
-        form.setColumnStretch(0, 0)
-        form.setColumnStretch(1, 1)
-        form.setColumnStretch(2, 0)
+        root = QtWidgets.QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 5)
+        root.setSpacing(4)
+
+
         self.label_src = QLabel("标注数据文件夹：")
         self.ed_src = QLineEdit()
         btn_src = StyledButton("选择文件夹", "select_bt"); btn_src.clicked.connect(self._pick_src)
-        form.addWidget(self.label_src, 0, 0, 1, 1)
-        form.addWidget(self.ed_src, 0, 1, 1, 1)
-        form.addWidget(btn_src, 0, 2, 1, 1)
+        self.row_src = QWidget(); r0 = QtWidgets.QHBoxLayout(self.row_src); r0.setContentsMargins(0,0,0,0); r0.setSpacing(5)
+        r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(btn_src)
+        root.addWidget(self.row_src)
+
         self.lbl_cls_b = QLabel("分类文本文件：")
         self.ed_cls_b = QLineEdit()
         btn_cls = StyledButton("选择文件", "select_bt"); btn_cls.clicked.connect(self._pick_cls)
-        form.addWidget(self.lbl_cls_b, 1, 0, 1, 1)
-        form.addWidget(self.ed_cls_b, 1, 1, 1, 1)
-        form.addWidget(btn_cls, 1, 2, 1, 1)
+        self.row_cls = QWidget(); r1 = QtWidgets.QHBoxLayout(self.row_cls); r1.setContentsMargins(0,0,0,0); r1.setSpacing(5)
+        r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(btn_cls)
+        root.addWidget(self.row_cls)
+
         self.lbl_ratio_b = QLabel("划分数据集比例：")
         self.sp_train_b = QSpinBox(); self.sp_train_b.setRange(0, 10); self.sp_train_b.setValue(9); self.sp_train_b.setFixedWidth(60)
         self.sp_val_b = QSpinBox(); self.sp_val_b.setRange(0, 10); self.sp_val_b.setValue(1); self.sp_val_b.setFixedWidth(60)
@@ -33,13 +36,17 @@ class OneClickPageWidget(QWidget):
         self.sp_train_b.valueChanged.connect(self._validate_ratios)
         self.sp_val_b.valueChanged.connect(self._validate_ratios)
         self.sp_test_b.valueChanged.connect(self._validate_ratios)
-        hb = QHBoxLayout(); hb.setSpacing(5); hb.setContentsMargins(0, 0, 0, 0); hb.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        title1 = QLabel("训练集:"); hb.addWidget(title1); hb.addWidget(self.sp_train_b); spacer1 = QSpacerItem(25, 20); hb.addItem(spacer1)
-        title2 = QLabel("验证集:"); hb.addWidget(title2); hb.addWidget(self.sp_val_b); spacer2 = QSpacerItem(25, 20); hb.addItem(spacer2)
-        title3 = QLabel("测试集:"); hb.addWidget(title3); hb.addWidget(self.sp_test_b)
-        vb = QWidget(); vb.setLayout(hb)
-        form.addWidget(self.lbl_ratio_b, 2, 0)
-        form.addWidget(vb, 2, 1)
+        ratio_box = QWidget(); hb = QtWidgets.QHBoxLayout(ratio_box); hb.setContentsMargins(0,0,0,0); hb.setSpacing(5)
+        hb.addWidget(QLabel("训练集:")); hb.addWidget(self.sp_train_b)
+        hb.addItem(QSpacerItem(25, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        hb.addWidget(QLabel("验证集:")); hb.addWidget(self.sp_val_b)
+        hb.addItem(QSpacerItem(25, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        hb.addWidget(QLabel("测试集:")); hb.addWidget(self.sp_test_b)
+        hb.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        self.row_ratio = QWidget(); r2 = QtWidgets.QHBoxLayout(self.row_ratio); r2.setContentsMargins(0,0,0,0); r2.setSpacing(5)
+        r2.addWidget(self.lbl_ratio_b); r2.addWidget(ratio_box, 1)
+        root.addWidget(self.row_ratio)
+
         self.lbl_error = QLabel()
         self.lbl_error.setStyleSheet("color:#d93025;font-size:12px;padding:6px 8px;background-color:#fff5f5;border:1px solid #ffd6d6;border-radius:6px;")
         self.lbl_error.setVisible(False)
@@ -50,36 +57,64 @@ class OneClickPageWidget(QWidget):
         err_layout.setSpacing(0)
         err_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         err_layout.addWidget(self.lbl_error)
-        form.addWidget(self.error_box, 3, 0, 1, 3)
+        root.addWidget(self.error_box)
+
         self.lbl_fmt = QLabel("数据集格式：")
         self.cb_fmt = QComboBox(); self.cb_fmt.addItems(["YOLO"])
-        form.addWidget(self.lbl_fmt, 4, 0)
-        form.addWidget(self.cb_fmt, 4, 1)
-        self.ck_persist = QCheckBox("持久化数据集")
-        form.addWidget(self.ck_persist, 5, 1)
-        self.lbl_out = QLabel("输出数据集路径：")
+        self.row_fmt = QWidget(); r3 = QtWidgets.QHBoxLayout(self.row_fmt); r3.setContentsMargins(0,0,0,0); r3.setSpacing(5)
+        r3.addWidget(self.lbl_fmt); r3.addWidget(self.cb_fmt, 1)
+        root.addWidget(self.row_fmt)
+
+        self.ck_persist = StyledCheckBox("持久化数据集:"); self.ck_persist.setChecked(False); self.ck_persist.clicked.connect(self._on_persist_changed)
+        self.row_persist = QWidget(); r4 = QtWidgets.QHBoxLayout(self.row_persist); r4.setContentsMargins(0,0,0,0); r4.setSpacing(5)
+        r4.addWidget(self.ck_persist)
+        root.addWidget(self.row_persist)
+
         self.ed_out = QLineEdit()
-        btn_out = StyledButton("选择输出目录", "select_bt"); btn_out.clicked.connect(self._pick_out)
-        form.addWidget(self.lbl_out, 6, 0)
-        form.addWidget(self.ed_out, 6, 1)
-        form.addWidget(btn_out, 6, 2)
+        self.btn_out = StyledButton("选择输出目录", "select_bt"); self.btn_out.clicked.connect(self._pick_out)
+        self.row_out = QWidget(); r5 = QtWidgets.QHBoxLayout(self.row_out); r5.setContentsMargins(0,0,0,0); r5.setSpacing(5)
+        r5.addWidget(self.ed_out, 1); r5.addWidget(self.btn_out)
+        self.ed_out.setVisible(False)
+        self.btn_out.setVisible(False)
+        root.addWidget(self.row_out)
+
+
         self.btn_run_one = StyledButton("一键训练", "primary")
         self.btn_run_one.setFixedSize(200, 50)
         self.btn_run_one.clicked.connect(self._emit_one_click)
-        form.addWidget(self.btn_run_one, 7, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        self.row_one_step_button = QWidget(); r6 = QtWidgets.QHBoxLayout(self.row_one_step_button); r6.setContentsMargins(0,5,0,5); r6.setSpacing(5)
+        r6.addStretch(1); r6.addWidget(self.btn_run_one); r6.addStretch(1)
+        self.row_one_step_button.setMinimumHeight(60)
+        self.row_one_step_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        root.addWidget(self.row_one_step_button)
+        
+    
         self._validate_ratios()
 
+    def _on_persist_changed(self):
+        vis = self.ck_persist.isChecked()
+        self.ed_out.setVisible(vis)
+        self.btn_out.setVisible(vis)
     def _validate_ratios(self):
         train = self.sp_train_b.value()
         val = self.sp_val_b.value()
         test = self.sp_test_b.value()
         total = train + val + test
         if total != 10:
-            self.lbl_error.setText("警告：比例总和需要为10，否则无法开启一键训练")
+            self.lbl_error.setText(f"警告：比例总和需要为10，否则无法开启一键训练,当前总和为{total}")
             self.lbl_error.setVisible(True)
+            try:
+                self.error_box.setFixedHeight(38)
+            except Exception:
+                pass
             self.btn_run_one.setEnabled(False)
         else:
             self.lbl_error.setVisible(False)
+            try:
+                self.error_box.setFixedHeight(0)
+            except Exception:
+                pass
             self.btn_run_one.setEnabled(True)
             
     def _pick_src(self):
@@ -102,3 +137,5 @@ class OneClickPageWidget(QWidget):
         persist = self.ck_persist.isChecked()
         out_dir = self.ed_out.text().strip() or None
         self.oneClickRequested.emit(src, cls, ratios, persist, out_dir)
+        
+  
