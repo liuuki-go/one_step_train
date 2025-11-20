@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt
 from gui.style.ButtonStyleManager import StyledButton
 class RunPageWidget(QWidget):
     """训练运行页：采集数据集路径与 Conda 基路径，并发出运行请求。"""
-    runRequested = Signal(str, str, str)
+    runRequested = Signal(str, str)
     def __init__(self):
         super().__init__()
         form = QGridLayout(self)
@@ -59,14 +59,7 @@ class RunPageWidget(QWidget):
         if not dp or not export_path:
             QtWidgets.QMessageBox.warning(self, "警告", "数据集文件夹与模型导出路径均不可为空！请检查后再执行操作。")
             return
-        cfg = get_wsl_config()
-        conda_base = ""
-        try:
-            if isinstance(cfg.get("conda"), dict):
-                conda_base = str(cfg["conda"].get("env_path", "")).strip()
-        except Exception:
-            QtWidgets.QMessageBox.warning(self, "警告", "获取 Conda 环境路径失败。请检查配置文件是否正确或联系管理员。")
-            return
+        
         #禁用开始训练的按钮
         self.btn_run_train.setEnabled(False);self.btn_run_train.setText("训练中")
-        self.runRequested.emit(dp, conda_base,export_path)
+        self.runRequested.emit(dp,export_path)

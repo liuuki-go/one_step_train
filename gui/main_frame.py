@@ -1,11 +1,8 @@
 from PySide6.QtWidgets import QPushButton
-from PySide6.QtWidgets import QPushButton
-from PySide6.QtWidgets import QPushButton
 import os
-import sys
 import yaml
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QStackedWidget, QSizePolicy
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QStackedWidget, QSizePolicy
 from PySide6.QtCore import QThread, Signal,Qt
 from core.dataset_builder import build_yolo_dataset
 from core.wsl_runner import build_train_cmd, run_stream
@@ -18,6 +15,7 @@ from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
 from PySide6.QtGui import QIcon, QPixmap
 from constants import SYS_SETTINGS_FILE
+from tools.sys_config_tools import get_wsl_config
 
 
 class LogThread(QThread):
@@ -217,56 +215,63 @@ class MainFrame(QMainWindow):
         self.page_build.log.connect(self._append_log)
         self.page_one.oneClickRequested.connect(self._on_one_click)
     
-    def _on_dataset_built(self, root: str, yaml_path: str):
-        self.dataset_root = root
-        self.dataset_yaml = yaml_path
-        self._append_log(f"数据集构建完成 {root}")
 
-    def _on_run_requested(self, dp: str, conda_base: str, export_path: str):
-        start_py = os.path.join(os.getcwd(), "train", "start.py")
-        cmd = build_train_cmd(start_py, dp, conda_base=conda_base, export_path=export_path)
-        self._append_log("启动训练")
+
+    def _on_dataset_built(self, src: str, cls: str, ratios: tuple, out_dir: str | None, fmt: str, persist: bool = False):
+        if fmt == "TXT":
+            dataset_root, yaml_path = build_yolo_dataset(src, cls, ratios, persist, out_dir)
+        elif fmt == "COCO":
+            dataset_root, yaml_path = build_coco_dataset(src, cls, ratios, persist, out_dir)
+        self._append_log(f"数据集构建完成 {dataset_root}")
+        return dataset_root, yaml_path
+
+
+
+    def _on_run_requested(self, dataset_root: str, export_path: str):
+        # 启动训练
+        start_py = os.path.join(os.getcwd(), "train", "start.py") # 训练脚本路径
+        cfg = get_wsl_config()
+        conda_base = ""
         try:
-            self._append_log("命令: " + " ".join(cmd))
+            if isinstance(cfg.get("conda"), dict):
+                conda_base = str(cfg["conda"].get("env_path", "")).strip()
+            if not conda_base:
+                QtWidgets.QMessageBox.warning(self, "警告", "Conda 环境路径不能为空。请检查配置文件是否正确或联系管理员。")
+                return
         except Exception:
-            pass
-        self._set_run_button_loading(True)
-        self.log_thread = LogThread(cmd)
-        self.log_thread.line.connect(self._append_log)
-        self.log_thread.done.connect(self._on_train_done)
-        self.log_thread.start()
-        
-
-        
-    def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str | None):
-        """处理一键训练请求：构建数据集并启动训练（使用系统配置的 conda 路径回退）。"""
-        if not src or not cls:
-            self._append_log("参数不完整")
+            QtWidgets.QMessageBox.warning(self, "警告", "获取 Conda 环境路径失败。请检查配置文件是否正确或联系管理员。")
             return
-        root, yaml_path = build_yolo_dataset(src, cls, ratios, persist, out_dir)
-        self.dataset_root = root
-        self.dataset_yaml = yaml_path
-        self._append_log(f"数据集构建完成 {root}")
-        start_py = os.path.join(os.getcwd(), "train", "start.py")
-        cb = None
-        try:
-            cfg = yaml.safe_load(open(os.path.join(os.getcwd(), "sys_config.yaml"), "r", encoding="utf-8")) or {}
-            wsl = cfg.get("wsl", {})
-            if isinstance(wsl, dict):
-                cb = wsl.get("conda", {}).get("env_path") if isinstance(wsl.get("conda"), dict) else None
-        except Exception:
-            cb = None
-        cmd = build_train_cmd(start_py, root, conda_base=cb)
+        self._append_log(f"conda 环境路径 {conda_base}")
+        cmd = build_train_cmd(start_py, dataset_root, conda_base=conda_base, export_path=export_path)
+        
         self._append_log("启动训练")
         try:
             self._append_log("命令: " + " ".join(cmd))
-        except Exception:
-            pass
-        self._set_one_button_loading(True)
-        self.log_thread = LogThread(cmd)
-        self.log_thread.line.connect(self._append_log)
-        self.log_thread.done.connect(self._on_train_done)
-        self.log_thread.start()
+            self._set_one_button_loading(True)
+            self.log_thread = LogThread(cmd)
+            self.log_thread.line.connect(self._append_log)
+            self.log_thread.done.connect(self._on_train_done)
+            self.log_thread.start()
+        except Exception as e:
+            self._set_one_button_loading(False)
+            return
+        
+
+        
+    def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str | None, export_path: str | None, fmt: str = "TXT"):
+        """处理一键训练请求：构建数据集并启动训练（使用系统配置的 conda 路径回退）。"""
+        # 构建数据集
+        dataset_root, yaml_path = self._on_dataset_built(src, cls, ratios, out_dir, fmt, persist)
+        if persist:
+            self._append_log(f"数据集构建完成 {dataset_root}")
+        
+        # 启动训练
+        self._on_run_requested(dataset_root, export_path)
+
+
+  
+        
+   
 
     def _limit_lines(self):
         """裁剪超出最大行数的内容，保留最后max_lines行"""
@@ -275,7 +280,13 @@ class MainFrame(QMainWindow):
         max_lines = 3000
         #设置保留行数
         save_lines = 2000
-        self.console.textChanged.disconnect(self._limit_lines)
+        
+        # 尝试断开信号，如果信号未连接则忽略异常
+        try:
+            self.console.textChanged.disconnect(self._limit_lines)
+        except:
+            pass
+            
         # 获取所有行并分割
         text = self.console.toPlainText()
         lines = text.split('\n')
@@ -293,10 +304,8 @@ class MainFrame(QMainWindow):
     
     def _set_lang(self, lang: str):
         if lang == "en":
-            self.setWindowTitle("One-Click Train")
             pass
         else:
-            self.setWindowTitle("一键训练")
             pass
     def _append_log(self, s: str):
         self.console.append(s)

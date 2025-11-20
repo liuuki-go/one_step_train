@@ -1,10 +1,10 @@
-
 import argparse
 import os
 import re
+import time
 import yaml
 from ultralytics import YOLO
-import time
+
 
 
 def _to_wsl(p: str) -> str:
@@ -46,6 +46,7 @@ def train_with_cfg(data: str, export_path: str):
         name=ts,
         data=data,
     )
+    
     model.export(
     format="onnx",
     imgsz=640,
