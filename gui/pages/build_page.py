@@ -3,6 +3,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QComboBox, QHBoxLayout, QSpacerItem, QSizePolicy
 from gui.style.ButtonStyleManager import StyledButton
 from PySide6.QtCore import Qt
+from gui.components.log_panel import LogPanelWidget
 
 
 
@@ -98,7 +99,13 @@ class BuildPageWidget(QWidget):
         self.row_one_step_button.setMinimumHeight(60)
         self.row_one_step_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         root.addWidget(self.row_one_step_button)
+
+        self.log_panel = LogPanelWidget("处理日志")
+        root.addWidget(self.log_panel)
         self._validate_ratios()
+
+    def append_log(self, s: str):
+        self.log_panel.append(s)
         
     def _validate_ratios(self):
         train = self.sp_train_b.value()

@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButt
 from gui.style.ButtonStyleManager import StyledButton
 from gui.style.CheckButtonStyleManager import StyledCheckBox
 from PySide6.QtCore import Qt
+from gui.components.log_panel import LogPanelWidget
 
 
 class OneClickPageWidget(QWidget):
@@ -16,14 +17,14 @@ class OneClickPageWidget(QWidget):
 
 
         self.label_src = QLabel("标注数据文件夹：");self.label_src.setFixedWidth(120)
-        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/zx123/Desktop/test")
+        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/Admin/Desktop/test")
         btn_src = StyledButton("选择文件夹", "select_bt"); btn_src.clicked.connect(self._pick_src)
         self.row_src = QWidget(); r0 = QtWidgets.QHBoxLayout(self.row_src); r0.setContentsMargins(0,0,0,0); r0.setSpacing(5)
         r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(btn_src)
         root.addWidget(self.row_src)
 
         self.lbl_cls_b = QLabel("分类文本文件：");self.lbl_cls_b.setFixedWidth(120)
-        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/zx123/Desktop/classes.txt")
+        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/Admin/Desktop/classes.txt")
         btn_cls = StyledButton("选择文件", "select_bt"); btn_cls.clicked.connect(self._pick_cls)
         self.row_cls = QWidget(); r1 = QtWidgets.QHBoxLayout(self.row_cls); r1.setContentsMargins(0,0,0,0); r1.setSpacing(5)
         r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(btn_cls)
@@ -121,7 +122,13 @@ class OneClickPageWidget(QWidget):
         err_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         err_layout.addWidget(self.lbl_error)
         root.addWidget(self.error_box)
+
+        self.log_panel = LogPanelWidget("处理日志")
+        root.addWidget(self.log_panel)
         self._validate_ratios()
+
+    def append_log(self, s: str):
+        self.log_panel.append(s)
 
     def _on_persist_changed(self):
         vis = self.ck_persist.isChecked()

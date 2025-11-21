@@ -1,15 +1,17 @@
 from PySide6 import QtWidgets
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog
 from tools.sys_config_tools import get_wsl_config
 from PySide6.QtCore import Qt
 from gui.style.ButtonStyleManager import StyledButton
+from gui.components.log_panel import LogPanelWidget
 class RunPageWidget(QWidget):
     """训练运行页：采集数据集路径与 Conda 基路径，并发出运行请求。"""
     runRequested = Signal(str, str)
     def __init__(self):
         super().__init__()
-        form = QGridLayout(self)
+        root = QVBoxLayout(self)
+        form = QGridLayout()
         #增加行间距
         form.setVerticalSpacing(15)
         # 数据集文件夹ui
@@ -43,6 +45,10 @@ class RunPageWidget(QWidget):
         # self.btn_run_train.set(Qt.AlignmentFlag.AlignCenter)
         self.btn_run_train.clicked.connect(self._emit_run)
         form.addWidget(self.btn_run_train, 2, 1,alignment=Qt.AlignmentFlag.AlignCenter)
+        root.addLayout(form)
+
+        self.log_panel = LogPanelWidget("处理日志")
+        root.addWidget(self.log_panel)
 
     def _pick_yaml_dir(self):
         d = QFileDialog.getExistingDirectory(self, "选择数据集文件夹")
@@ -52,6 +58,9 @@ class RunPageWidget(QWidget):
         d = QFileDialog.getExistingDirectory(self, "选择模型导出路径")
         if d:
             self.ed_export_path.setText(d)
+
+    def append_log(self, s: str):
+        self.log_panel.append(s)
 
     def _emit_run(self):
         dp = self.ed_yaml.text().strip()

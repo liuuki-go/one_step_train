@@ -14,6 +14,7 @@ from gui.pages.config_page import ConfigPageWidget
 from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
 from PySide6.QtGui import QIcon, QPixmap
+from gui.components.log_panel import LogPanelWidget
 from constants import SYS_SETTINGS_FILE
 from tools.sys_config_tools import get_wsl_config
 
@@ -33,14 +34,14 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("oneST")  #设置程序标题
-        self.setFixedSize(1500, 700)  #设置初始窗口大小
+        self.setFixedSize(1400, 700)  #设置初始窗口大小
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
         self.log_thread = None
         
     def _on_page_changed(self, idx):
-        self.console.setVisible(idx != 3)
+        pass
     
     def _set_run_button_loading(self, loading: bool):
         try:
@@ -64,7 +65,7 @@ class MainFrame(QMainWindow):
             pass
 
     def _on_train_done(self, rc: int):
-        self._append_log(f"训练结束 {rc}")
+        self._emit_log_to_current(f"训练结束 {rc}")
         self._set_run_button_loading(False)
         self._set_one_button_loading(False)
 
@@ -176,14 +177,7 @@ class MainFrame(QMainWindow):
         action_group.idClicked.connect(lambda i: self.stack.setCurrentIndex(i))
     
         self.stack = QStackedWidget() #创建一个栈式窗口部件，用于切换不同的页面，QStackedWidget 是一个容器，可以包含多个子部件，但同一时间只显示一个
-        self.console = QTextEdit()
-        self.console.setReadOnly(True)    
-        self.console.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
-        self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:12px;border: 5px solid #FC5185;background-color: #ffffff;}')
-        self.console.setFixedHeight(240)
         center.addWidget(self.stack)
-        center.addItem(QtWidgets.QSpacerItem(0, 20, QSizePolicy.Minimum, QSizePolicy.Fixed))
-        center.addWidget(self.console)
 
 
         #创建页面ui，每个页面都是一个QWidget
@@ -200,19 +194,11 @@ class MainFrame(QMainWindow):
         self.stack.currentChanged.connect(self._on_page_changed)
         
         #创建右侧监控器，用于显示训练进度和日志
-        self.monitor = MonitorWidget()
+        self.monitor = MonitorWidget(); self.monitor.setStyleSheet("background-color: #F8FAFC;")
         right.addWidget(self.monitor)
-        try:
-            cfg = yaml.safe_load(open(os.path.join(os.getcwd(), SYS_SETTINGS_FILE), "r", encoding="utf-8")) or {}
-            wsl = cfg.get("wsl", {})
-            cp = None
-            if isinstance(wsl, dict):
-                cp = wsl.get("conda", {}).get("env_path") if isinstance(wsl.get("conda"), dict) else None
-        except Exception:
-            pass
         self.page_run.runRequested.connect(self._on_run_requested)
         self.page_build.datasetBuilt.connect(self._on_dataset_built)
-        self.page_build.log.connect(self._append_log)
+        self.page_build.log.connect(lambda s: getattr(self.page_build, "append_log", lambda x: None)(s))
         self.page_one.oneClickRequested.connect(self._on_one_click)
     
 
@@ -222,7 +208,7 @@ class MainFrame(QMainWindow):
             dataset_root, yaml_path = build_yolo_dataset(src, cls, ratios, persist, out_dir)
         elif fmt == "COCO":
             dataset_root, yaml_path = build_coco_dataset(src, cls, ratios, persist, out_dir)
-        self._append_log(f"数据集构建完成 {dataset_root}")
+        self._emit_log_to_current(f"数据集构建完成 {dataset_root}")
         return dataset_root, yaml_path
 
 
@@ -241,15 +227,15 @@ class MainFrame(QMainWindow):
         except Exception:
             QtWidgets.QMessageBox.warning(self, "警告", "获取 Conda 环境路径失败。请检查配置文件是否正确或联系管理员。")
             return
-        self._append_log(f"conda 环境路径 {conda_base}")
+        self._emit_log_to_current(f"conda 环境路径 {conda_base}")
         cmd = build_train_cmd(start_py, dataset_root, conda_base=conda_base, export_path=export_path)
         
-        self._append_log("启动训练")
+        self._emit_log_to_current("启动训练")
         try:
-            self._append_log("命令: " + " ".join(cmd))
+            self._emit_log_to_current("命令: " + " ".join(cmd))
             self._set_one_button_loading(True)
             self.log_thread = LogThread(cmd)
-            self.log_thread.line.connect(self._append_log)
+            self.log_thread.line.connect(self._emit_log_to_current)
             self.log_thread.done.connect(self._on_train_done)
             self.log_thread.start()
         except Exception as e:
@@ -263,7 +249,7 @@ class MainFrame(QMainWindow):
         # 构建数据集
         dataset_root, yaml_path = self._on_dataset_built(src, cls, ratios, out_dir, fmt, persist)
         if persist:
-            self._append_log(f"数据集构建完成 {dataset_root}")
+            self._emit_log_to_current(f"数据集构建完成 {dataset_root}")
         
         # 启动训练
         self._on_run_requested(dataset_root, export_path)
@@ -273,44 +259,21 @@ class MainFrame(QMainWindow):
         
    
 
-    def _limit_lines(self):
-        """裁剪超出最大行数的内容，保留最后max_lines行"""
-        # 断开信号避免递归触发
-        # 设置触发行数（可根据需求调整，比如1000行）
-        max_lines = 3000
-        #设置保留行数
-        save_lines = 2000
-        
-        # 尝试断开信号，如果信号未连接则忽略异常
-        try:
-            self.console.textChanged.disconnect(self._limit_lines)
-        except:
-            pass
-            
-        # 获取所有行并分割
-        text = self.console.toPlainText()
-        lines = text.split('\n')
-        
-        # 若行数超过最大值，截取后max_lines行
-        if len(lines) > max_lines:
-            lines = lines[-save_lines:]  # 保留save_lines行
-            new_text = '\n'.join(lines)
-            self.console.setPlainText(new_text)
-            # 滚动到最后一行（保持控制台最新内容可见）
-            self.console.moveCursor(self.console.textCursor().End)
-        
-        # 重新连接信号
-        self.console.textChanged.connect(self._limit_lines)
+    # 日志裁剪逻辑已在各页面的日志组件中实现
     
     def _set_lang(self, lang: str):
         if lang == "en":
             pass
         else:
             pass
-    def _append_log(self, s: str):
-        self.console.append(s)
-        # 触发行数裁剪
-        self._limit_lines()
+    def _emit_log_to_current(self, s: str):
+        try:
+            w = self.stack.currentWidget()
+            fn = getattr(w, "append_log", None)
+            if callable(fn):
+                fn(s)
+        except Exception:
+            pass
     
     
     def _open_sys_settings(self):
@@ -320,4 +283,4 @@ class MainFrame(QMainWindow):
     
 
     def _on_page_changed(self, idx):
-        self.console.setVisible(idx != 3)
+        pass

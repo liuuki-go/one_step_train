@@ -2,7 +2,7 @@ task: detect
 mode: train
 model: null
 data: null
-epochs: 1
+epochs: 10
 time: null
 patience: 20
 batch: 32

@@ -18,6 +18,7 @@ def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", co
     - 否则在常见路径下自动探测 `condabin/conda` 或使用 `micromamba`，最终回退到 `python3`。
     """
     sp = win_to_wsl_path(start_py)
+    wd = os.path.dirname(os.path.dirname(sp))
     dd = win_to_wsl_path(dataset_dir)
     ep = win_to_wsl_path(export_path) 
     extra = f" --export_path \"{ep}\"" if ep else ""
@@ -26,23 +27,25 @@ def build_train_cmd(start_py: str, dataset_dir: str, env_name: str = "train", co
         py = base + f"/envs/{env_name}/bin/python"
         cb = base + "/condabin/conda"
         cmd = (
+            f"cd \"{wd}\"; "
             f"if [ -x \"{py}\" ]; then \"{py}\" \"{sp}\" --dataset \"{dd}\"{extra}; "
             f"elif [ -x \"{cb}\" ]; then \"{cb}\" run -n {env_name} python \"{sp}\" --dataset \"{dd}\"{extra}; "    
             f"else python3 \"{sp}\" --dataset \"{dd}\"{extra}; fi"
         )
         return ["wsl", "bash", "-lc", cmd]
-    sh = (
-        "set -e; "
-        "CONDA_BIN=''; for b in $HOME/enter $HOME/miniconda3 $HOME/anaconda3 $HOME/mambaforge $HOME/miniforge3 /opt/conda; do "
-        "  if [ -x \"$b/condabin/conda\" ]; then CONDA_BIN=\"$b/condabin/conda\"; break; fi; "
-        "done; "
-        "if [ -n \"$CONDA_BIN\" ]; then \"$CONDA_BIN\" run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
-        "else "
-        "  if command -v micromamba >/dev/null 2>&1; then micromamba run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
-        f"  else python3 \"{sp}\" --dataset \"{dd}\"{extra}; fi; "  
-        "fi"
-    )
-    return ["wsl", "bash", "-lc", sh]
+    # sh = (
+    #     "set -e; "
+    #     f"cd \"{wd}\"; "
+    #     "CONDA_BIN=''; for b in $HOME/enter $HOME/miniconda3 $HOME/anaconda3 $HOME/mambaforge $HOME/miniforge3 /opt/conda; do "
+    #     "  if [ -x \"$b/condabin/conda\" ]; then CONDA_BIN=\"$b/condabin/conda\"; break; fi; "
+    #     "done; "
+    #     "if [ -n \"$CONDA_BIN\" ]; then \"$CONDA_BIN\" run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
+    #     "else "
+    #     "  if command -v micromamba >/dev/null 2>&1; then micromamba run -n " + env_name + f" python \"{sp}\" --dataset \"{dd}\"{extra}; "
+    #     f"  else python3 \"{sp}\" --dataset \"{dd}\"{extra}; fi; "  
+    #     "fi"
+    # )
+    # return ["wsl", "bash", "-lc", sh]
 
 def run_stream(cmd: List[str], on_line: Callable[[str], None]) -> int:
     """以流式方式运行命令并逐行回调输出。返回进程退出码。"""
