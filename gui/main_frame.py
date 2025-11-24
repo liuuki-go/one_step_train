@@ -34,7 +34,7 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("oneST")  #设置程序标题
-        self.setFixedSize(1400, 700)  #设置初始窗口大小
+        self.setFixedSize(1600, 700)  #设置初始窗口大小
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
