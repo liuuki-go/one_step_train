@@ -47,7 +47,7 @@ class MetricBlock(QWidget):
     '''
     def __init__(self, title: str, icon, caption: str):
         super().__init__()
-        self.setStyleSheet("QWidget{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
+        self.setStyleSheet("QWidget{background:#f6f8fa;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
         root = QHBoxLayout(self)
         left = QVBoxLayout()
         top = QHBoxLayout()
@@ -55,47 +55,50 @@ class MetricBlock(QWidget):
         self.icon.setPixmap(icon.pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
         self.title = QLabel(title)
-        self.title.setStyleSheet("QLabel{font-size:15px;font-weight:700;border:0;background:#f6f8fa;}")
+        self.title.setStyleSheet("QLabel{font-size:13px;font-weight:600;border:0;background:#f6f8fa;}")
         top.addWidget(self.icon)
         top.addWidget(self.title)
         top.addStretch(1)
         self.detail = QLabel("")
-        self.detail.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.detail.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         left.addLayout(top)
-        self.extra = QLabel("")
-        self.extra.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.extra = QLabel("") #gpu name 
+        self.extra.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         left.addWidget(self.extra)
         row_width = 120
         self.util_row = QHBoxLayout()
         self.util_label = QLabel("利用率")
-        self.util_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.util_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.util_bar = QProgressBar()
         self.util_bar.setRange(0, 100)
         self.util_bar.setTextVisible(True)
         self.util_bar.setFixedWidth(row_width)
         self.util_row.addWidget(self.util_label)
         self.util_row.addWidget(self.util_bar)
+        self.util_row.addStretch(1);self.util_row.setSpacing(10)
         left.addLayout(self.util_row)
         self.temp_row = QHBoxLayout()
         self.temp_label = QLabel("温度")
-        self.temp_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.temp_label.setStyleSheet("QLabel{font-size:12px;padding:0 0 0 0px;border:0;background:#f6f8fa;}")
         self.temp_bar = QProgressBar()
         self.temp_bar.setRange(0, 85)
         self.temp_bar.setTextVisible(True)
         self.temp_bar.setFixedWidth(row_width)
         self.temp_row.addWidget(self.temp_label)
         self.temp_row.addWidget(self.temp_bar)
+        self.temp_row.addStretch(1);self.temp_row.setSpacing(20)
         left.addLayout(self.temp_row)
         left.addWidget(self.detail)
         left.addStretch(1)
         root.addLayout(left, 1)
-        gauge_box = QVBoxLayout();gauge_box.setContentsMargins(0, 20, 0, 0)
+
+        right = QVBoxLayout();right.setContentsMargins(0, 20, 0, 0)
         self.gauge = RingGauge(QColor(3, 102, 214))
         self.gauge_title = QLabel(caption)
         self.gauge_title.setStyleSheet("QLabel{color:#666;}")
-        gauge_box.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        gauge_box.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        root.addLayout(gauge_box)
+        right.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        right.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        root.addLayout(right)
 
     def _bar_color(self, v: float) -> str:
         if v < 55:
@@ -328,7 +331,7 @@ class memory_monitor_widget(QWidget):
 class gpu_monitor_widget(QWidget):
     def __init__(self):
         super().__init__()
-        self.root = QVBoxLayout(self)
+        self.root = QVBoxLayout(self);self.root.setContentsMargins(0, 0, 0, 0)
         self.blocks = []
         try:
             n = gpu_count()
