@@ -1,6 +1,3 @@
-from operator import ge
-import psutil
-import subprocess
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QGridLayout
 from PySide6.QtGui import QPainter, QColor, QPen
@@ -8,7 +5,7 @@ from PySide6.QtCore import QRectF
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QProgressBar
 from core.monitor import get_cpu_name, cpu_temperature, cpu_load, memory_load, memory_data
-import random 
+from core.monitor_gpu import query_gpus, gpu_count
 
 
 class RingGauge(QWidget):
@@ -117,7 +114,7 @@ class MetricBlock(QWidget):
 class cpu_monitor_widget(QWidget):
     def __init__(self):
         super().__init__()
-        self.setStyleSheet("QWidget{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
+        self.setStyleSheet("QWidget{background:#f6f8fa;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
         root = QHBoxLayout(self)
         left = QVBoxLayout()
         top = QHBoxLayout()
@@ -125,39 +122,42 @@ class cpu_monitor_widget(QWidget):
         self.icon.setPixmap(QIcon("gui/icon/monitor_icon/host_cpu.png").pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
         self.cpu_name = QLabel(get_cpu_name() or "CPU")
-        self.cpu_name.setStyleSheet("QLabel{font-size:15px;font-weight:700;border:0;background:#f6f8fa;}")
+        self.cpu_name.setStyleSheet("QLabel{font-size:13px;font-weight:700;border:0;background:#f6f8fa;}")
         top.addWidget(self.icon)
         top.addWidget(self.cpu_name)
         top.addStretch(1)
         left.addLayout(top)
         row_width = 120
-        self.avg_row = QHBoxLayout();self.avg_row.setContentsMargins(0, 0, 0, 0);self.avg_row.setSpacing(3)
+        self.avg_row = QHBoxLayout();self.avg_row.setContentsMargins(0, 0, 0, 0);self.avg_row.setSpacing(0)
         self.avg_label = QLabel("平均温度")
-        self.avg_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.avg_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.avg_bar = QProgressBar()
-        self.avg_bar.setRange(0, 85)
+        self.avg_bar.setRange(0, 90)
         self.avg_bar.setTextVisible(True)
         self.avg_bar.setFixedWidth(row_width)
         self.avg_row.addWidget(self.avg_label)
         self.avg_row.addWidget(self.avg_bar)
+        self.avg_row.addStretch(1);self.avg_row.setSpacing(10)
         left.addLayout(self.avg_row)
         self.max_row = QHBoxLayout()
         self.max_label = QLabel("最大温度")
-        self.max_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.max_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.max_bar = QProgressBar()
-        self.max_bar.setRange(0, 85)
+        self.max_bar.setRange(0, 90)
         self.max_bar.setTextVisible(True)
         self.max_bar.setFixedWidth(row_width)
         self.max_row.addWidget(self.max_label)
         self.max_row.addWidget(self.max_bar)
+        self.max_row.addStretch(1);self.max_row.setSpacing(10)
         left.addLayout(self.max_row)
         self.load_row = QHBoxLayout()
         self.load_label = QLabel("CPU负载")
-        self.load_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.load_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.load_bar = QProgressBar()
         self.load_bar.setRange(0, 100)
         self.load_bar.setTextVisible(True)
         self.load_bar.setFixedWidth(row_width)
+        import random
         lv = random.randint(0, 15)
         self.load_bar.setValue(lv)
         color = self._bar_color("load", lv)
@@ -165,6 +165,7 @@ class cpu_monitor_widget(QWidget):
         
         self.load_row.addWidget(self.load_label)
         self.load_row.addWidget(self.load_bar)
+        self.load_row.addStretch(1);self.load_row.setSpacing(10)
         left.addLayout(self.load_row)
         root.addLayout(left, 1)
 
@@ -177,13 +178,13 @@ class cpu_monitor_widget(QWidget):
         root.addLayout(right)
     def _bar_color(self, kind: str, v: float) -> str:
         if kind == "temp":
-            if v < 50:
+            if v < 65:
                 return "#00a35a"
             if v < 75:
                 return "#ffbf00"
             return "#dc0000"
         if kind == "load":
-            if v < 55:
+            if v < 60:
                 return "#00a35a"
             if v < 80:
                 return "#ffbf00"
@@ -226,7 +227,7 @@ class cpu_monitor_widget(QWidget):
 class memory_monitor_widget(QWidget):
     def __init__(self):
         super().__init__()
-        self.setStyleSheet("QWidget{background:#fff;border:1px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
+        self.setStyleSheet("QWidget{background:#fff;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
         root = QHBoxLayout(self)
         left = QVBoxLayout()
         top = QHBoxLayout()
@@ -234,7 +235,7 @@ class memory_monitor_widget(QWidget):
         self.icon.setPixmap(QIcon("gui/icon/monitor_icon/host_memory.png").pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
         self.title = QLabel("Generic Memory")
-        self.title.setStyleSheet("QLabel{font-size:15px;font-weight:700;border:0;background:#f6f8fa;}")
+        self.title.setStyleSheet("QLabel{font-size:13px;font-weight:700;border:0;background:#f6f8fa;}")
         top.addWidget(self.icon)
         top.addWidget(self.title)
         top.addStretch(1)
@@ -242,31 +243,39 @@ class memory_monitor_widget(QWidget):
         row_width = 120
         self.v_row = QHBoxLayout()
         self.v_label = QLabel("虚拟负载")
-        self.v_label.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+        self.v_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.v_bar = QProgressBar()
         self.v_bar.setRange(0, 100)
         self.v_bar.setTextVisible(True)
         self.v_bar.setFixedWidth(row_width)
         self.v_row.addWidget(self.v_label)
         self.v_row.addWidget(self.v_bar)
+        self.v_row.addStretch(1);self.v_row.setSpacing(10)
         left.addLayout(self.v_row)
 
         self.grid = QGridLayout()
         self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setHorizontalSpacing(2)
         self.grid.setVerticalSpacing(1)
+        # 在grid布局初始化后添加：让列不自动拉伸
+        self.grid.setColumnStretch(0, 0)
+        self.grid.setColumnStretch(1, 0)
+        self.grid.setColumnStretch(2, 0)
+        # 同时给包含grid的left控件设置尺寸策略（避免父布局强制拉伸）
+    
         h0 = QLabel("")
         h1 = QLabel("使用量")
         h2 = QLabel("可用量")
         for w in (h0, h1, h2):
-            w.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+            w.setStyleSheet("QLabel{font-size:12px;padding:0 0 0 5px;border:0;background:#f6f8fa;}")
         self.grid.addWidget(h0, 0, 0)
         self.grid.addWidget(h1, 0, 1)
         self.grid.addWidget(h2, 0, 2)
         r1 = QLabel("物理")
         r2 = QLabel("虚拟")
         for w in (r1, r2):
-            w.setStyleSheet("QLabel{font-size:12px;padding:1 2px;border:0;background:#f6f8fa;}")
+            w.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
+            w.setFixedWidth(30)
         self.grid.addWidget(r1, 1, 0)
         self.grid.addWidget(r2, 2, 0)
         self.p_used = QLabel("-")
@@ -317,9 +326,76 @@ class memory_monitor_widget(QWidget):
         self.v_avail.setText(f"{float(va):.2f}GB" if isinstance(va, (int, float)) else "-")
 
 class gpu_monitor_widget(QWidget):
-
-
-    pass
+    def __init__(self):
+        super().__init__()
+        self.root = QVBoxLayout(self)
+        self.blocks = []
+        try:
+            n = gpu_count()
+        except Exception:
+            n = 0
+        self._ensure_blocks(max(1, int(n)))
+    def _ensure_blocks(self, n: int):
+        while len(self.blocks) < n:
+            blk = MetricBlock(f"GPU {len(self.blocks)}", QIcon("gui/icon/monitor_icon/gpu.png"), "显存使用率")
+            self.blocks.append(blk)
+            self.root.addWidget(blk)
+        while len(self.blocks) > n:
+            b = self.blocks.pop()
+            b.setParent(None)
+    def refresh(self):
+        ds = query_gpus() or []
+        if len(ds) != len(self.blocks):
+            self._ensure_blocks(max(1, len(ds)))
+        if not ds:
+            self._ensure_blocks(1)
+            blk = self.blocks[0]
+            blk.title.setText("GPU")
+            blk.extra.setText("")
+            blk.util_bar.setValue(0)
+            blk.util_bar.setStyleSheet("QProgressBar{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;} QProgressBar::chunk{background:#e1e4e8;border-radius:6px;}")
+            blk.util_bar.setFormat("-")
+            blk.temp_bar.setValue(0)
+            blk.temp_bar.setStyleSheet("QProgressBar{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;} QProgressBar::chunk{background:#e1e4e8;border-radius:6px;}")
+            blk.temp_bar.setFormat("-")
+            blk.gauge.setValue(0)
+            blk.gauge.setColor(QColor(3, 102, 214))
+            blk.detail.setText("")
+            return
+        self._ensure_blocks(len(ds))
+        for i, d in enumerate(ds):
+            blk = self.blocks[i]
+            blk.title.setText(f"GPU {i}")
+            nm = d.get("name") or ""
+            blk.extra.setText(nm)
+            util = float(d.get("utilization") or 0.0)
+            mu = d.get("memory_used")
+            mt = d.get("memory_total")
+            tp = d.get("temperature")
+            bc = blk._bar_color(util)
+            blk.util_bar.setValue(int(max(0, min(100, util))))
+            blk.util_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{bc};border-radius:6px;}}")
+            blk.util_bar.setFormat(f"{util:.1f}%")
+            tv = float(tp) if isinstance(tp, (int, float)) else 0.0
+            tc = blk._bar_color_temp(tv)
+            blk.temp_bar.setValue(int(max(0, min(85, tv))))
+            blk.temp_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{tc};border-radius:6px;}}")
+            blk.temp_bar.setFormat(f"{tv:.1f}°C" if isinstance(tp, (int, float)) else "-")
+            mem_pct = 0.0
+            if isinstance(mu, (int, float)) and isinstance(mt, (int, float)) and mt not in (None, 0):
+                mem_pct = float(mu) / float(mt) * 100.0
+            if mem_pct < 50:
+                gc = QColor(0, 155, 85)
+            elif mem_pct < 80:
+                gc = QColor(255, 191, 0)
+            else:
+                gc = QColor(220, 0, 0)
+            blk.gauge.setValue(mem_pct)
+            blk.gauge.setColor(gc)
+            det = []
+            if isinstance(mu, (int, float)) and isinstance(mt, (int, float)):
+                det.append(f"{float(mu):.0f}MB/{float(mt):.0f}MB")
+            blk.detail.setText("  ".join(det))
 
 class MonitorWidget(QWidget):
     """系统监控组件：显示 CPU/内存与 GPU 指标。
@@ -329,7 +405,6 @@ class MonitorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         v = QVBoxLayout(self)
-        st = self.style()
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.container = QWidget()
@@ -338,138 +413,14 @@ class MonitorWidget(QWidget):
         self.mem_block = memory_monitor_widget()
         self.container_layout.addWidget(self.cpu_block)
         self.container_layout.addWidget(self.mem_block)
-        self.gpu_blocks = []
+        self.gpu_block = gpu_monitor_widget()
+        self.container_layout.addWidget(self.gpu_block)
         self.scroll.setWidget(self.container)
         v.addWidget(self.scroll)
-        self.cpu_data = []
-        self.mem_data = []
-        self.gpu_data = []
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.refresh)
         self.timer.start(1000)
-        self._init_nvml()
-        self._build_gpu_blocks()
-    def _query_cpu_freq_windows(self):
-        try:
-            r = subprocess.run(["wmic", "cpu", "get", "CurrentClockSpeed"], capture_output=True, text=True, timeout=2)
-            if r.returncode == 0 and r.stdout:
-                for ln in r.stdout.splitlines():
-                    ln = ln.strip()
-                    if ln.isdigit():
-                        return float(ln) / 1000.0
-        except Exception:
-            pass
-        return None
-    def _init_nvml(self):
-        try:
-            import pynvml as nvml
-            nvml.nvmlInit()
-            self.nvml = nvml
-            self.gpu_count = self.nvml.nvmlDeviceGetCount()
-            self.gpu_handles = [self.nvml.nvmlDeviceGetHandleByIndex(i) for i in range(self.gpu_count)]
-        except Exception:
-            self.nvml = None
-            self.gpu_count = 0
-    def _build_gpu_blocks(self):
-        st = self.style()
-        if self.nvml and self.gpu_count > 0:
-            for i in range(self.gpu_count):
-                blk = MetricBlock(f"显卡 {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存占用")
-                self.gpu_blocks.append(blk)
-                self.container_layout.addWidget(blk)
-                try:
-                    nm = self.nvml.nvmlDeviceGetName(self.gpu_handles[i])
-                    nm = nm.decode() if isinstance(nm, bytes) else str(nm)
-                    blk.extra.setText(nm)
-                except Exception:
-                    pass
-        else:
-            blk = MetricBlock("显卡", QIcon("gui\icon\monitor_icon\gpu.png"), "显存占用")
-            self.gpu_blocks.append(blk)
-            self.container_layout.addWidget(blk)
-    def _ensure_gpu_blocks(self):
-        st = self.style()
-        if self.nvml and self.gpu_count > 0 and len(self.gpu_blocks) != self.gpu_count:
-            for b in self.gpu_blocks:
-                b.setParent(None)
-            self.gpu_blocks = []
-            for i in range(self.gpu_count):
-                blk = MetricBlock(f"显卡 {i}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存占用")
-                self.gpu_blocks.append(blk)
-                self.container_layout.addWidget(blk)
-                try:
-                    nm = self.nvml.nvmlDeviceGetName(self.gpu_handles[i])
-                    nm = nm.decode() if isinstance(nm, bytes) else str(nm)
-                    blk.extra.setText(nm)
-                except Exception:
-                    pass
-        elif (not self.nvml or self.gpu_count == 0) and len(self.gpu_blocks) == 0:
-            blk = MetricBlock("显卡", QIcon("gui\icon\monitor_icon\gpu.png"), "显存占用")
-            self.gpu_blocks.append(blk)
-            self.container_layout.addWidget(blk)
-    def _query_smi_all(self):
-        try:
-            r = subprocess.run([
-                "nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
-                "--format=csv,noheader,nounits"
-            ], capture_output=True, text=True, timeout=2)
-            if r.returncode == 0 and r.stdout.strip():
-                return [ln.strip() for ln in r.stdout.strip().splitlines() if ln.strip()]
-        except Exception:
-            return []
-        return []
-    def _query_smi_names(self):
-        try:
-            r = subprocess.run([
-                "nvidia-smi", "--query-gpu=name", "--format=csv,noheader"
-            ], capture_output=True, text=True, timeout=2)
-            if r.returncode == 0 and r.stdout.strip():
-                return [ln.strip() for ln in r.stdout.strip().splitlines() if ln.strip()]
-        except Exception:
-            return []
-        return []
-    def _query_smi_by_id(self, i: int):
-        try:
-            r = subprocess.run([
-                "nvidia-smi", "-i", str(i), "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu",
-                "--format=csv,noheader,nounits"
-            ], capture_output=True, text=True, timeout=2)
-            if r.returncode == 0 and r.stdout.strip():
-                parts = [p.strip() for p in r.stdout.strip().split(',')]
-                if len(parts) >= 4:
-                    return float(parts[0]), float(parts[1]), float(parts[2]), float(parts[3])
-        except Exception:
-            return None
-        return None
     def refresh(self):
-        cpu = psutil.cpu_percent(interval=None)
-        freq = psutil.cpu_freq(percpu=False).current / 1000.0
-        vm = psutil.virtual_memory()
-        mem = vm.percent
-        gpu = None
-        gpu_mem_used = None
-        gpu_mem_total = None
-        gpu_temp = None
-        self.cpu_data.append(cpu)
-        self.mem_data.append(mem)
-        self.gpu_data.append(gpu if gpu is not None else 0)
-        if len(self.cpu_data) > 100:
-            self.cpu_data = self.cpu_data[-100:]
-            self.mem_data = self.mem_data[-100:]
-            self.gpu_data = self.gpu_data[-100:]
-        cpu_temp = None
-        try:
-            ts = psutil.sensors_temperatures()
-            for k, vs in ts.items():
-                for v in vs:
-                    if "cpu" in v.label.lower() or "package" in v.label.lower():
-                        cpu_temp = v.current
-                        break
-        except Exception:
-            cpu_temp = None
-        mem_used = vm.used / (1024**3)
-        mem_total = vm.total / (1024**3)
-        # 更新CPU监控组件
         try:
             self.cpu_block.refresh()
         except Exception:
@@ -478,106 +429,7 @@ class MonitorWidget(QWidget):
             self.mem_block.refresh()
         except Exception:
             pass
-        self._ensure_gpu_blocks()
-        if self.nvml and self.gpu_count > 0:
-            for i, h in enumerate(self.gpu_handles):
-                gu = gm_u = gm_t = gt = None
-                try:
-                    try:
-                        nm = self.nvml.nvmlDeviceGetName(h)
-                        nm = nm.decode() if isinstance(nm, bytes) else str(nm)
-                        self.gpu_blocks[i].extra.setText(nm)
-                    except Exception:
-                        pass
-                    u = self.nvml.nvmlDeviceGetUtilizationRates(h)
-                    gi = self.nvml.nvmlDeviceGetMemoryInfo(h)
-                    gu = float(u.gpu)
-                    gm_u = gi.used / (1024**2)
-                    gm_t = gi.total / (1024**2)
-                    gt = self.nvml.nvmlDeviceGetTemperature(h, self.nvml.NVML_TEMPERATURE_GPU)
-                except Exception:
-                    pass
-                if gu is None or gm_u is None or gm_t is None or gt is None:
-                    smi = self._query_smi_by_id(i)
-                    if smi is not None:
-                        s_gu, s_gm_u, s_gm_t, s_gt = smi
-                        if gu is None:
-                            gu = s_gu
-                        if gm_u is None:
-                            gm_u = s_gm_u
-                        if gm_t is None:
-                            gm_t = s_gm_t
-                        if gt is None:
-                            gt = s_gt
-                blk = self.gpu_blocks[i]
-                mem_pct = 0.0
-                if gm_u is not None and gm_t not in (None, 0):
-                    mem_pct = float(gm_u) / float(gm_t) * 100.0
-                gu_v = float(gu) if gu is not None else 0.0
-                blk.util_bar.setValue(int(max(0, min(100, gu_v))))
-                bc = blk._bar_color(gu_v)
-                blk.util_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{bc};border-radius:6px;}}")
-                blk.util_bar.setFormat(f"{gu_v:.1f}%")
-                tv = float(gt) if gt is not None else 0.0
-                blk.temp_bar.setValue(int(max(0, min(85, tv))))
-                tc = blk._bar_color_temp(tv)
-                blk.temp_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{tc};border-radius:6px;}}")
-                blk.temp_bar.setFormat(f"{tv:.1f}°C" if gt is not None else "-")
-                blk.gauge.setValue(mem_pct)
-                blk.gauge.setColor(self._color_for("mem", mem_pct))
-                det = []
-                if gm_u is not None and gm_t is not None:
-                    det.append(f"{gm_u:.0f}MB/{gm_t:.0f}MB")
-                blk.detail.setText("  ".join(det))
-            return
-        if gpu is None:
-            try:
-                lines = self._query_smi_all()
-                names = self._query_smi_names()
-                while len(self.gpu_blocks) < len(lines):
-                    nb = MetricBlock(f"显卡 {len(self.gpu_blocks)}", QIcon("gui\icon\monitor_icon\gpu.png"), "显存使用率")
-                    self.gpu_blocks.append(nb)
-                    self.container_layout.addWidget(nb)
-                for i, ln in enumerate(lines):
-                    parts = [p.strip() for p in ln.split(',')]
-                    if len(parts) >= 4:
-                        gu = float(parts[0])
-                        gm_u = float(parts[1])
-                        gm_t = float(parts[2])
-                        gt = float(parts[3])
-                        blk = self.gpu_blocks[i]
-                        blk.title.setText(f"显卡 {i}")
-                        if i < len(names):
-                            blk.extra.setText(names[i])
-                        mem_pct = 0.0
-                        if gm_t not in (None, 0):
-                            mem_pct = gm_u / gm_t * 100.0
-                        blk.util_bar.setValue(int(max(0, min(100, gu))))
-                        bc = blk._bar_color(gu)
-                        blk.util_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{bc};border-radius:6px;}}")
-                        blk.util_bar.setFormat(f"{gu:.1f}%")
-                        tv = float(gt) if gt is not None else 0.0
-                        blk.temp_bar.setValue(int(max(0, min(85, tv))))
-                        tc = blk._bar_color_temp(tv)
-                        blk.temp_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{tc};border-radius:6px;}}")
-                        blk.temp_bar.setFormat(f"{tv:.1f}°C" if gt is not None else "-")
-                        blk.gauge.setValue(mem_pct)
-                        blk.gauge.setColor(self._color_for("mem", mem_pct))
-                        det = [f"{gm_u:.0f}MB/{gm_t:.0f}MB"]
-                        blk.detail.setText("  ".join(det))
-            except Exception:
-                pass
-    def _color_for(self, kind: str, v: float) -> QColor:
-        if kind in ("cpu", "mem"):
-            if v < 50:
-                return QColor(0, 155, 85)
-            if v < 80:
-                return QColor(255, 191, 0)
-            return QColor(220, 0, 0)
-        if kind == "gpu":
-            if v > 80:
-                return QColor(3, 102, 214)
-            if v < 50:
-                return QColor(0, 155, 85)
-            return QColor(255, 191, 0)
-        return QColor(3, 102, 214)
+        try:
+            self.gpu_block.refresh()
+        except Exception:
+            pass

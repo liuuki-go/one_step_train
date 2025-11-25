@@ -34,7 +34,7 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("oneST")  #设置程序标题
-        self.setFixedSize(1600, 700)  #设置初始窗口大小
+        self.setFixedSize(1300, 700)  #设置初始窗口大小
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
@@ -129,15 +129,18 @@ class MainFrame(QMainWindow):
 
 
 
-       
-        center = QVBoxLayout()
+        center_container = QWidget()
+        center_container.setStyleSheet("QWidget{background:#F8FAFC;border-right:0px solid #e1e4e8;}")
+        center = QVBoxLayout(center_container)
         center.setContentsMargins(0, 0, 0, 0)
         center.setSpacing(0)
-        right = QVBoxLayout()
+        right_container = QWidget()
+        right_container.setStyleSheet("QWidget{background:#F8FAFC;border-right:0px solid #e1e4e8;}")
+        right = QVBoxLayout(right_container)
         left_container.setFixedWidth(120)
         root.addWidget(left_container)
-        root.addLayout(center, 7.5)
-        root.addLayout(right, 2.5)
+        root.addWidget(center_container, 70)
+        root.addWidget(right_container, 30)
         
         setup_menu(self, self._open_sys_settings, self._set_lang)
 

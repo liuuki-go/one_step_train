@@ -32,7 +32,7 @@ class OneClickPageWidget(QWidget):
 
         # 数据集划分比例、格式、持久化, 放到一个行中显示
         #显示行
-        self.row_ratio_fmt_persist = QWidget(); row_mix = QtWidgets.QHBoxLayout(self.row_ratio_fmt_persist); row_mix.setContentsMargins(0,0,0,0); row_mix.setSpacing(100)
+        self.row_ratio_fmt_persist = QWidget(); row_mix = QtWidgets.QHBoxLayout(self.row_ratio_fmt_persist); row_mix.setContentsMargins(0,0,0,0); row_mix.setSpacing(20)
         # 数据集划分比例布局
         self.lbl_ratio_b = QLabel("划分数据集比例(训练集:验证集:测试集):");self.lbl_ratio_b.setFixedWidth(220)
         self.sp_train_b = QSpinBox(); self.sp_train_b.setRange(0, 10); self.sp_train_b.setValue(9); self.sp_train_b.setFixedWidth(60)
@@ -63,7 +63,7 @@ class OneClickPageWidget(QWidget):
       
 
         # 持久化数据集布局
-        self.ck_persist = StyledCheckBox("是否持久化数据集:"); self.ck_persist.setChecked(False); self.ck_persist.clicked.connect(self._on_persist_changed)
+        self.ck_persist = StyledCheckBox("是否持久化数据集"); self.ck_persist.setChecked(False); self.ck_persist.clicked.connect(self._on_persist_changed)
         self.row_persist = QWidget(); r4 = QtWidgets.QHBoxLayout(self.row_persist); r4.setContentsMargins(5,0,0,0)
         r4.addWidget(self.ck_persist)
 
