@@ -1,4 +1,3 @@
-from PySide6 import QtWidgets
 
 def setup_menu(main_window, on_sys_settings, on_lang_change):
     mb = main_window.menuBar()
@@ -8,7 +7,16 @@ def setup_menu(main_window, on_sys_settings, on_lang_change):
     act_en = lang_menu.addAction("English")
     act_zh.triggered.connect(lambda: on_lang_change("zh"))
     act_en.triggered.connect(lambda: on_lang_change("en"))
+
+
     sys_menu = mb.addMenu("系统设置")
     act_sys = sys_menu.addAction("打开设置")
     act_sys.triggered.connect(on_sys_settings)
+
+    shift_admin_menu=sys_menu.addMenu("切换用户")
+    shift_admin_menu.triggered.connect(on_shift_admin)
     return mb
+def on_shift_admin():
+    
+    pass
+    

@@ -3,7 +3,6 @@ import subprocess
 import time
 import os
 import ctypes
-import sys
 import threading
 
 LHM_EXE_PATH = r"core/LibreHardwareMonitor/LibreHardwareMonitor.exe"
@@ -20,6 +19,7 @@ class Monitor:
             return False
     def _start_lhm(self):
         try:
+            # Check if LHM is already running
             for proc in psutil.process_iter(["name"]):
                 if proc.info["name"] == LHM_PROCESS_NAME:
                     self.is_running = True

@@ -142,7 +142,7 @@ class MainFrame(QMainWindow):
         root.addWidget(center_container, 70)
         root.addWidget(right_container, 30)
         
-        setup_menu(self, self._open_sys_settings, self._set_lang)
+        
 
         #设置左侧功能区的按钮和样式
         btn_one = QPushButton("一键训练"); btn_one.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
@@ -161,13 +161,15 @@ class MainFrame(QMainWindow):
         left_functions_layout.addWidget(btn_run)
         left_functions_layout.addWidget(btn_cfg)
         left_functions_layout.addStretch(1)
-        #设置左侧功能区按钮
+        #设置左侧工具区按钮
 
         btn_tool_1 = QPushButton("btn_tool_1"); btn_tool_1.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
         btn_tool_2 = QPushButton("btn_tool_2"); btn_tool_2.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
         left_tools_layout.addWidget(btn_tool_1)
         left_tools_layout.addWidget(btn_tool_2)
         left_tools_layout.addStretch(1)
+        #设置菜单
+        setup_menu(self, self._open_sys_settings, self._set_lang)
 
         
         #创建一个按钮组，用于管理左侧功能区的按钮，确保只能选中一个
