@@ -209,7 +209,7 @@ class cpu_monitor_widget(QWidget):
         self.max_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;font-weight:550;}} QProgressBar::chunk{{background:{mc};border-radius:6px;}}")
         self.max_bar.setFormat(f"{mv:.1f}°C" if isinstance(mx, (int, float)) else "-")
         # 负载
-        ld = cpu_load()
+        ld, cpu_util = cpu_load()
         lv = float(ld) if isinstance(ld, (int, float)) else 0.0
         self.load_bar.setValue(int(max(0, min(100, lv))))
         color = self._bar_color("load", lv)
@@ -217,10 +217,10 @@ class cpu_monitor_widget(QWidget):
         self.load_label.setText("CPU负载")
         self.load_bar.setFormat(f"{lv:.1f}%" if isinstance(ld, (int, float)) else "-")
         try:
-            self.gauge.setValue(lv)
-            if lv < 50:
+            self.gauge.setValue(cpu_util)
+            if cpu_util < 50:
                 self.gauge.setColor(QColor(0, 155, 85))
-            elif lv < 80:
+            elif cpu_util < 80:
                 self.gauge.setColor(QColor(255, 191, 0))
             else:
                 self.gauge.setColor(QColor(220, 0, 0))

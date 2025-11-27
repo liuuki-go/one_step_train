@@ -154,6 +154,7 @@ def cpu_load():
     cl = _get_client()
     if cl is None:
         return None
+    cpu_util = psutil.cpu_percent(interval=None)
     c, HT, ST = cl
     total = None
     total = None
@@ -183,7 +184,9 @@ def cpu_load():
         total = sum(per_core) / len(per_core)
     if total is None or (isinstance(total, float) and total == 0.0):
         total = _PSUTIL_LAST
-    return total
+   
+
+    return total, cpu_util
 
 def cpu_clocks():
     cl = _get_client()
