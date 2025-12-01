@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QApplication
 from gui.main_frame import MainFrame
 from PySide6.QtGui import QIcon
 from core.monitor import Monitor
+from core.monitor import shutdown as monitor_shutdown
 import os
 import ctypes
 
@@ -45,6 +46,10 @@ def main():
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("gui/icon/system_icon.png"))
+    try:
+        app.aboutToQuit.connect(monitor_shutdown)
+    except Exception:
+        pass
     w = MainFrame()
     w.show()
     sys.exit(app.exec())

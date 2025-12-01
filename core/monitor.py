@@ -43,6 +43,7 @@ _CLIENT_LOCK = threading.RLock()
 _SAMPLER_THREAD = None
 _SAMPLER_PERIOD = 3.0
 _PSUTIL_LAST = None
+_STOP_EVENT = threading.Event()
 
 def _get_client():
     global _CLIENT
@@ -87,7 +88,7 @@ def _ensure_sampler():
             _PSUTIL_LAST = psutil.cpu_percent(interval=_SAMPLER_PERIOD)
         except Exception:
             _PSUTIL_LAST = None
-        while True:
+        while not _STOP_EVENT.is_set():
             try:
                 with _CLIENT_LOCK:
                     _update_all_once()
@@ -101,6 +102,32 @@ def _ensure_sampler():
     t = threading.Thread(target=_loop, name="lhm-sampler", daemon=True)
     _SAMPLER_THREAD = t
     t.start()
+
+def shutdown():
+    try:
+        _STOP_EVENT.set()
+    except Exception:
+        pass
+    try:
+        if _SAMPLER_THREAD is not None:
+            _SAMPLER_THREAD.join(timeout=_SAMPLER_PERIOD + 1.0)
+    except Exception:
+        pass
+    try:
+        if _CLIENT is not None:
+            c, _, _ = _CLIENT
+            try:
+                c.Close()
+            except Exception:
+                pass
+    except Exception:
+        pass
+    try:
+        with _CLIENT_LOCK:
+            globals()["_CLIENT"] = None
+            globals()["_SAMPLER_THREAD"] = None
+    except Exception:
+        pass
 
 def get_cpu_name():
     cl = _get_client()

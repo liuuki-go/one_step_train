@@ -17,6 +17,7 @@ from PySide6.QtGui import QIcon, QPixmap
 from gui.components.log_panel import LogPanelWidget
 from constants import SYS_SETTINGS_FILE
 from tools.sys_config_tools import get_wsl_config
+from core.monitor import shutdown as monitor_shutdown
 
 
 class LogThread(QThread):
@@ -34,11 +35,13 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("oneST")  #设置程序标题
-        self.setFixedSize(1300, 700)  #设置初始窗口大小
+        self.resize(1220, 650)  #设置初始窗口大小
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
         self.log_thread = None
+        self._is_closing = False
         
     def _on_page_changed(self, idx):
         pass
@@ -289,3 +292,28 @@ class MainFrame(QMainWindow):
 
     def _on_page_changed(self, idx):
         pass
+
+    def closeEvent(self, e):
+        self._is_closing = True
+        self.hide()
+        try:
+            if self.log_thread is not None:
+                try:
+                    self.log_thread.line.disconnect(self._emit_log_to_current)
+                except Exception:
+                    pass
+                try:
+                    self.log_thread.done.disconnect(self._on_train_done)
+                except Exception:
+                    pass
+                try:
+                    self.log_thread.quit()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            QtCore.QTimer.singleShot(0, QtWidgets.QApplication.instance().quit)
+        except Exception:
+            pass
+        e.accept()

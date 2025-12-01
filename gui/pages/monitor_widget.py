@@ -418,6 +418,7 @@ class MonitorWidget(QWidget):
         self.container_layout.addWidget(self.mem_block)
         self.gpu_block = gpu_monitor_widget()
         self.container_layout.addWidget(self.gpu_block)
+        self.container_layout.addStretch(1)
         self.scroll.setWidget(self.container)
         v.addWidget(self.scroll)
         self.timer = QtCore.QTimer(self)
