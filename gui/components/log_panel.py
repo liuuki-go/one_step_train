@@ -14,15 +14,15 @@ class LogPanelWidget(QWidget):
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.console.setLineWrapMode(QTextEdit.LineWrapMode.NoWrap)
-        self.console.setFrameStyle(QFrame.NoFrame)
+        self.console.setFrameStyle(QFrame.Shape.NoFrame)
         self.console.setStyleSheet('QTextEdit{font-family:Consolas, "Courier New", monospace; font-size:11px;background-color: #ffffff;padding:0px;} QTextEdit::viewport{background:#ffffff;}')
         self.console.setPlaceholderText(title)
-        self.console.setFixedHeight(250)
-        self.console.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # self.console.setFixedHeight(250)
+        # self.console.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.console_frame = QFrame()
         self.console_frame.setStyleSheet('QFrame{background:#ffffff;border: 2px solid #9aa0a6;border-radius:8px;}')
         frame_layout = QtWidgets.QVBoxLayout(self.console_frame)
-        frame_layout.setContentsMargins(4,4,4,4)
+        frame_layout.setContentsMargins(1, 1, 1, 1)
         frame_layout.setSpacing(0)
         frame_layout.addWidget(self.console)
         eff = QGraphicsDropShadowEffect(self)
@@ -77,5 +77,5 @@ class LogPanelWidget(QWidget):
         if len(lines) > max_lines:
             lines = lines[-save_lines:]
             self.console.setPlainText('\n'.join(lines))
-            self.console.moveCursor(self.console.textCursor().End)
+            self.console.moveCursor(self.console.textCursor().End) #type: ignore
         self.console.textChanged.connect(self._limit_lines)

@@ -30,7 +30,7 @@ def _split_indices(n: int, ratios: Tuple[int, int, int]) -> Tuple[List[int], Lis
     test = idxs[n_train + n_val:]
     return train, val, test
 
-def build_yolo_dataset(src_dir: str, classes_path: str, ratios: Tuple[int, int, int], persist: bool, output_dir: str = None, seed: int = 42):
+def build_yolo_dataset(src_dir: str, classes_path: str, ratios: Tuple[int, int, int], persist: bool, output_dir: str, seed: int = 42):
     """构建 YOLO 数据集并返回 `(root, yaml_path)`。"""
     random.seed(seed)
     if persist and not output_dir:

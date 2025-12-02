@@ -159,26 +159,29 @@ class SystemSettingsDialog(QDialog):
         out = yaml.safe_load(yaml.safe_dump(section, allow_unicode=True, sort_keys=False)) if isinstance(section, dict) else {}
         i = 0
         while i < self.form.rowCount():
-            lab = self.form.itemAt(i, QFormLayout.LabelRole).widget()
-            fld = self.form.itemAt(i, QFormLayout.FieldRole).widget()
-            if isinstance(fld, QLabel) and lab and lab.text():
+            lab = self.form.itemAt(i, QFormLayout.ItemRole.LabelRole).widget()
+            fld = self.form.itemAt(i, QFormLayout.ItemRole.FieldRole).widget()
+            if isinstance(fld, QLabel) and lab and lab.text():  #type: ignore
+                i += 1
+                continue
+            if fld is None:
                 i += 1
                 continue
             path = fld.property("yaml_path") or []
             old = self._get_by_path(section, path)
             if isinstance(old, bool):
-                val = bool(fld.isChecked())
+                val = bool(fld.isChecked()) #type: ignore
             elif isinstance(old, int):
-                val = int(fld.value())
+                val = int(fld.value()) #type: ignore
             elif isinstance(old, float):
-                val = float(fld.value())
+                val = float(fld.value()) #type: ignore
             elif isinstance(old, (list, dict)) or old is None:
                 try:
-                    val = yaml.safe_load(fld.text())
+                    val = yaml.safe_load(fld.text()) #type: ignore
                 except Exception:
-                    val = fld.text()
+                    val = fld.text() #type: ignore
             else:
-                val = fld.text()
+                val = fld.text() #type: ignore
             self._set_by_path(out, path, val)
             i += 1
         return {key: out}

@@ -4,6 +4,7 @@ import time
 import os
 import ctypes
 import threading
+from tools.sys_config_tools import get_resource_path
 
 LHM_EXE_PATH = r"core/LibreHardwareMonitor/LibreHardwareMonitor.exe"
 LHM_PROCESS_NAME = "LibreHardwareMonitor.exe"
@@ -45,17 +46,20 @@ _SAMPLER_PERIOD = 3.0
 _PSUTIL_LAST = None
 _STOP_EVENT = threading.Event()
 
+
+
 def _get_client():
     global _CLIENT
     if _CLIENT is not None:
         return _CLIENT
     try:
-        import clr
-        dll_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "LibreHardwareMonitor"))
-        dll = os.path.join(dll_dir, "LibreHardwareMonitorLib.dll")
-        from System.Reflection import Assembly
+        import clr #.net入口 
+        dll = get_resource_path("core/LibreHardwareMonitor/LibreHardwareMonitorLib.dll")
+        if not os.path.exists(dll):
+            raise FileNotFoundError(f"找不到DLL文件：{dll}\n请检查打包时是否添加了 --add-data 参数")
+        from System.Reflection import Assembly #type: ignore[attr-defined]
         Assembly.LoadFrom(dll)
-        from LibreHardwareMonitor.Hardware import Computer, HardwareType, SensorType
+        from LibreHardwareMonitor.Hardware import Computer, HardwareType, SensorType  #type: ignore[attr-defined]
         c = Computer()
         c.IsCpuEnabled = True
         c.IsMemoryEnabled = True

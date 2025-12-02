@@ -20,15 +20,22 @@ from tools.sys_config_tools import get_wsl_config
 from core.monitor import shutdown as monitor_shutdown
 
 
+from threading import Event
+
 class LogThread(QThread):
     line = Signal(str)
     done = Signal(int)
     def __init__(self, cmd):
         super().__init__()
         self.cmd = cmd
+        self.stop_event = Event()
+        
     def run(self):
-        rc = run_stream(self.cmd, lambda s: self.line.emit(s))
+        rc = run_stream(self.cmd, lambda s: self.line.emit(s), stop_event=self.stop_event)
         self.done.emit(rc)
+    
+    def stop(self):
+        self.stop_event.set()
 
 class MainFrame(QMainWindow):
     """主框架：只负责页面路由与信号接线，业务逻辑下沉到各页面或 core 模块。"""
@@ -71,6 +78,20 @@ class MainFrame(QMainWindow):
         self._emit_log_to_current(f"训练结束 {rc}")
         self._set_run_button_loading(False)
         self._set_one_button_loading(False)
+        try:
+            # 训练结束时，禁用停止按钮
+            if hasattr(self.page_run, "btn_stop_train"):
+                self.page_run.btn_stop_train.setEnabled(False)
+        except Exception:
+            pass
+
+    def _on_stop_requested(self):
+        """处理停止训练请求"""
+        if self.log_thread and self.log_thread.isRunning():
+            self._emit_log_to_current("正在发送停止信号...")
+            self.log_thread.stop()
+        else:
+            self._emit_log_to_current("当前没有正在运行的训练任务。")
 
     def _init_ui(self):
         """初始化用户界面，包括布局、组件和信号槽连接。"""
@@ -205,17 +226,21 @@ class MainFrame(QMainWindow):
         self.monitor = MonitorWidget(); self.monitor.setStyleSheet("background-color: #F8FAFC;")
         right.addWidget(self.monitor)
         self.page_run.runRequested.connect(self._on_run_requested)
+        self.page_run.stopRequested.connect(self._on_stop_requested) # 连接停止信号
         self.page_build.datasetBuilt.connect(self._on_dataset_built)
         self.page_build.log.connect(lambda s: getattr(self.page_build, "append_log", lambda x: None)(s))
         self.page_one.oneClickRequested.connect(self._on_one_click)
+        self.page_one.stopRequested.connect(self._on_stop_requested) # 连接停止信号
     
 
 
-    def _on_dataset_built(self, src: str, cls: str, ratios: tuple, out_dir: str | None, fmt: str, persist: bool = False):
-        if fmt == "TXT":
-            dataset_root, yaml_path = build_yolo_dataset(src, cls, ratios, persist, out_dir)
-        elif fmt == "COCO":
-            dataset_root, yaml_path = build_coco_dataset(src, cls, ratios, persist, out_dir)
+    def _on_dataset_built(self, src: str, cls: str, ratios: tuple, out_dir: str, fmt: str, persist: bool = False):
+        # if fmt == "TXT":
+        dataset_root, yaml_path = build_yolo_dataset(src, cls, ratios, persist, out_dir)
+        # elif fmt == "COCO":
+           # dataset_root, yaml_path = build_coco_dataset(src, cls, ratios, persist, out_dir)
+        #    pass
+
         self._emit_log_to_current(f"数据集构建完成 {dataset_root}")
         return dataset_root, yaml_path
 
@@ -223,7 +248,7 @@ class MainFrame(QMainWindow):
 
     def _on_run_requested(self, dataset_root: str, export_path: str):
         # 启动训练
-        start_py = os.path.join(os.getcwd(), "train", "start.py") # 训练脚本路径
+        start_py = os.path.join(os.getcwd(), "start.py") # 训练脚本路径
         cfg = get_wsl_config()
         conda_base = ""
         try:
@@ -236,7 +261,7 @@ class MainFrame(QMainWindow):
             QtWidgets.QMessageBox.warning(self, "警告", "获取 Conda 环境路径失败。请检查配置文件是否正确或联系管理员。")
             return
         self._emit_log_to_current(f"conda 环境路径 {conda_base}")
-        cmd = build_train_cmd(start_py, dataset_root, conda_base=conda_base, export_path=export_path)
+        cmd = build_train_cmd(export_path,start_py, dataset_root, conda_base=conda_base)
         
         self._emit_log_to_current("启动训练")
         try:
@@ -252,7 +277,7 @@ class MainFrame(QMainWindow):
         
 
         
-    def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str | None, export_path: str | None, fmt: str = "TXT"):
+    def _on_one_click(self, src: str, cls: str, ratios: tuple, persist: bool, out_dir: str, export_path: str, fmt: str = "TXT"):
         """处理一键训练请求：构建数据集并启动训练（使用系统配置的 conda 路径回退）。"""
         # 构建数据集
         dataset_root, yaml_path = self._on_dataset_built(src, cls, ratios, out_dir, fmt, persist)
@@ -289,10 +314,6 @@ class MainFrame(QMainWindow):
         dlg = SysSettingsDialog(self, p)
         dlg.exec()
     
-
-    def _on_page_changed(self, idx):
-        pass
-
     def closeEvent(self, e):
         self._is_closing = True
         self.hide()
@@ -313,7 +334,9 @@ class MainFrame(QMainWindow):
         except Exception:
             pass
         try:
-            QtCore.QTimer.singleShot(0, QtWidgets.QApplication.instance().quit)
+            app = QtWidgets.QApplication.instance()
+            if app is not None:
+                QtCore.QTimer.singleShot(0, app.quit)
         except Exception:
             pass
         e.accept()

@@ -2,7 +2,6 @@ import os
 import yaml
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QScrollArea, QFormLayout
-from gui.style.CheckButtonStyleManager import StyledCheckBox
 
 class ConfigPageWidget(QWidget):
     """训练配置页：加载 YAML，生成编辑器，支持保存与导出。"""
@@ -17,12 +16,12 @@ class ConfigPageWidget(QWidget):
         form_top.addWidget(self.ed_cfg_path, 0, 1)
         form_top.addWidget(b0, 0, 2)
         layout.addLayout(form_top)
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
         self.cfg_panel = QWidget()
         self.form_all = QFormLayout(self.cfg_panel)
-        self.scroll.setWidget(self.cfg_panel)
-        layout.addWidget(self.scroll)
+        self.scroll_area.setWidget(self.cfg_panel)
+        layout.addWidget(self.scroll_area)
         btns = QtWidgets.QHBoxLayout()
         self.btn_load_cfg = QPushButton("加载配置")
         self.btn_save_cfg = QPushButton("保存配置")

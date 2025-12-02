@@ -19,14 +19,14 @@ class BuildPageWidget(QWidget):
 
 
         self.label_src = QLabel("标注数据文件夹：");self.label_src.setFixedWidth(120)
-        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/zx123/Desktop/test")
+        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/Administrator/Desktop/test")
         btn_src = StyledButton("选择文件夹", "select_bt"); btn_src.clicked.connect(self._pick_src)
         self.row_src = QWidget(); r0 = QtWidgets.QHBoxLayout(self.row_src); r0.setContentsMargins(0,0,0,0); r0.setSpacing(5)
         r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(btn_src)
         root.addWidget(self.row_src)
 
         self.lbl_cls_b = QLabel("分类文本文件：");self.lbl_cls_b.setFixedWidth(120)
-        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/zx123/Desktop/classes.txt")
+        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/Administrator/Desktop/classes.txt")
         btn_cls = StyledButton("选择文件", "select_bt"); btn_cls.clicked.connect(self._pick_cls)
         self.row_cls = QWidget(); r1 = QtWidgets.QHBoxLayout(self.row_cls); r1.setContentsMargins(0,0,0,0); r1.setSpacing(5)
         r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(btn_cls)
@@ -69,7 +69,7 @@ class BuildPageWidget(QWidget):
         root.addWidget(self.row_ratio_fmt_persist)
 
 
-        self.ed_out = QLineEdit(); self.ed_out.setText("C:/Users/zx123/Desktop/持久化")
+        self.ed_out = QLineEdit(); self.ed_out.setText("C:/Users/Administrator/Desktop/持久化")
         self.btn_out = StyledButton("选择输出目录", "select_bt"); self.btn_out.clicked.connect(self._pick_out)
         self.row_out = QWidget(); r5 = QtWidgets.QHBoxLayout(self.row_out); r5.setContentsMargins(0,0,0,0); r5.setSpacing(5)
         r5.addWidget(self.ed_out, 1); r5.addWidget(self.btn_out)

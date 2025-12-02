@@ -26,7 +26,7 @@ class RingGauge(QWidget):
         self.update()
     def paintEvent(self, e):
         p = QPainter(self)
-        p.setRenderHint(QPainter.Antialiasing)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w = self.width()
         h = self.height()
         r = min(w, h) - 8
@@ -39,7 +39,7 @@ class RingGauge(QWidget):
         span = int(self._value / 100.0 * 360 * 16)
         p.drawArc(rect, 90 * 16, -span)
         p.setPen(QPen(QColor(51, 51, 51)))
-        p.drawText(self.rect(), QtCore.Qt.AlignCenter, f"{self._value:.1f}%")
+        p.drawText(self.rect(), QtCore.Qt.AlignmentFlag.AlignCenter, f"{self._value:.1f}%")
 
 class MetricBlock(QWidget):
     '''
@@ -209,7 +209,11 @@ class cpu_monitor_widget(QWidget):
         self.max_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;font-weight:550;}} QProgressBar::chunk{{background:{mc};border-radius:6px;}}")
         self.max_bar.setFormat(f"{mv:.1f}°C" if isinstance(mx, (int, float)) else "-")
         # 负载
-        ld, cpu_util = cpu_load()
+        cpu_res = cpu_load()
+        if cpu_res is None:
+             ld, cpu_util = 0.0, 0.0
+        else:
+             ld, cpu_util = cpu_res
         lv = float(ld) if isinstance(ld, (int, float)) else 0.0
         self.load_bar.setValue(int(max(0, min(100, lv))))
         color = self._bar_color("load", lv)
@@ -408,8 +412,8 @@ class MonitorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         v = QVBoxLayout(self)
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
         self.container = QWidget()
         self.container_layout = QVBoxLayout(self.container)
         self.cpu_block = cpu_monitor_widget()
@@ -419,8 +423,8 @@ class MonitorWidget(QWidget):
         self.gpu_block = gpu_monitor_widget()
         self.container_layout.addWidget(self.gpu_block)
         self.container_layout.addStretch(1)
-        self.scroll.setWidget(self.container)
-        v.addWidget(self.scroll)
+        self.scroll_area.setWidget(self.container)
+        v.addWidget(self.scroll_area)
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.refresh)
         self.timer.start(1000)

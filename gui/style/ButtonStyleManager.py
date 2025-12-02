@@ -29,6 +29,10 @@ class ButtonStyleManager:
             QPushButton:pressed {
                 background-color: #0D47A1;
             }
+            QPushButton:disabled  {
+                background-color: #E0E0E0;
+                color: #A0A0A0;
+            }
         """,
           "select_bt": """
             QPushButton {

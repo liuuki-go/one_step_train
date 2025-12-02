@@ -9,6 +9,7 @@ from gui.components.log_panel import LogPanelWidget
 
 class OneClickPageWidget(QWidget):
     oneClickRequested = Signal(str, str, tuple, bool, object, str, str)
+    stopRequested = Signal() # 新增停止信号
     def __init__(self):
         super().__init__()
         root = QtWidgets.QVBoxLayout(self)
@@ -17,14 +18,14 @@ class OneClickPageWidget(QWidget):
 
 
         self.label_src = QLabel("标注数据文件夹：");self.label_src.setFixedWidth(120)
-        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/Admin/Desktop/test")
+        self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/Administrator/Desktop/test")
         btn_src = StyledButton("选择文件夹", "select_bt"); btn_src.clicked.connect(self._pick_src)
         self.row_src = QWidget(); r0 = QtWidgets.QHBoxLayout(self.row_src); r0.setContentsMargins(0,0,0,0); r0.setSpacing(5)
         r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(btn_src)
         root.addWidget(self.row_src)
 
         self.lbl_cls_b = QLabel("分类文本文件：");self.lbl_cls_b.setFixedWidth(120)
-        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/Admin/Desktop/classes.txt")
+        self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/Administrator/Desktop/classes.txt")
         btn_cls = StyledButton("选择文件", "select_bt"); btn_cls.clicked.connect(self._pick_cls)
         self.row_cls = QWidget(); r1 = QtWidgets.QHBoxLayout(self.row_cls); r1.setContentsMargins(0,0,0,0); r1.setSpacing(5)
         r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(btn_cls)
@@ -103,9 +104,14 @@ class OneClickPageWidget(QWidget):
         self.btn_run_one = StyledButton("一键训练", "primary")
         self.btn_run_one.setFixedSize(200, 50)
         self.btn_run_one.clicked.connect(self._emit_one_click)
+         # 停止训练按钮ui
+        self.btn_stop_train = StyledButton("停止训练", "primary") 
+        self.btn_stop_train.setFixedSize(200, 50)
+        self.btn_stop_train.clicked.connect(self._emit_stop)
+        self.btn_stop_train.setEnabled(False) # 初始不可用
 
         self.row_one_step_button = QWidget(); r6 = QtWidgets.QHBoxLayout(self.row_one_step_button); r6.setContentsMargins(0,5,0,5); r6.setSpacing(5)
-        r6.addStretch(1); r6.addWidget(self.btn_run_one); r6.addStretch(1)
+        r6.addStretch(1); r6.addWidget(self.btn_run_one); r6.addWidget(self.btn_stop_train); r6.addStretch(1)
         self.row_one_step_button.setMinimumHeight(60)
         self.row_one_step_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         root.addWidget(self.row_one_step_button)
@@ -190,6 +196,7 @@ class OneClickPageWidget(QWidget):
     
 
         self.btn_run_one.setEnabled(False); self.btn_run_one.setText("训练中")
+        self.btn_stop_train.setEnabled(True) # 启用停止按钮
         src = self.ed_src.text().strip()
         cls = self.ed_cls_b.text().strip()
         ratios = (self.sp_train_b.value(), self.sp_val_b.value(), self.sp_test_b.value())
@@ -198,5 +205,12 @@ class OneClickPageWidget(QWidget):
         out_src = self.ed_out_src.text().strip()
         fmt = self.cb_fmt.currentText()
         self.oneClickRequested.emit(src, cls, ratios, persist, out_dir,out_src,fmt)
+
+   
+
+    def _emit_stop(self):
+        self.stopRequested.emit()
+        self.btn_stop_train.setEnabled(False) # 防止重复点击
+        self.append_log("正在停止训练...")
         
   
