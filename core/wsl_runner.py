@@ -1,8 +1,6 @@
-from contextlib import nullcontext
 import os
 import re
 import subprocess
-import sys
 from typing import List, Callable, Optional
 
 def win_to_wsl_path(p: str) -> str:
@@ -38,7 +36,9 @@ def build_train_cmd(export_path: str,start_py: str, dataset_dir: str, env_name: 
 def run_stream(cmd: List[str], on_line: Callable[[str], None], stop_event=None) -> int:
     """以流式方式运行命令并逐行回调输出。返回进程退出码。"""
     ansi = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    # 添加 CREATE_NO_WINDOW (0x08000000) 以防止弹出控制台窗口
+    flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace", creationflags=flags)
     
     while True:
         if stop_event and stop_event.is_set():

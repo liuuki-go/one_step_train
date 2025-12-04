@@ -6,6 +6,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QProgressBar
 from core.monitor import get_cpu_name, cpu_temperature, cpu_load, memory_load, memory_data
 from core.monitor_gpu import query_gpus, gpu_count
+from tools.sys_config_tools import get_resource_path
 
 
 class RingGauge(QWidget):
@@ -122,7 +123,7 @@ class cpu_monitor_widget(QWidget):
         left = QVBoxLayout()
         top = QHBoxLayout()
         self.icon = QLabel()
-        self.icon.setPixmap(QIcon("gui/icon/monitor_icon/host_cpu.png").pixmap(30, 30))
+        self.icon.setPixmap(QIcon(get_resource_path("gui/icon/monitor_icon/host_cpu.png")).pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
         self.cpu_name = QLabel(get_cpu_name() or "CPU")
         self.cpu_name.setStyleSheet("QLabel{font-size:13px;font-weight:700;border:0;background:#f6f8fa;}")
@@ -239,7 +240,7 @@ class memory_monitor_widget(QWidget):
         left = QVBoxLayout()
         top = QHBoxLayout()
         self.icon = QLabel()
-        self.icon.setPixmap(QIcon("gui/icon/monitor_icon/host_memory.png").pixmap(30, 30))
+        self.icon.setPixmap(QIcon(get_resource_path("gui/icon/monitor_icon/host_memory.png")).pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
         self.title = QLabel("Generic Memory")
         self.title.setStyleSheet("QLabel{font-size:13px;font-weight:700;border:0;background:#f6f8fa;}")
@@ -344,7 +345,7 @@ class gpu_monitor_widget(QWidget):
         self._ensure_blocks(max(1, int(n)))
     def _ensure_blocks(self, n: int):
         while len(self.blocks) < n:
-            blk = MetricBlock(f"GPU {len(self.blocks)}", QIcon("gui/icon/monitor_icon/gpu.png"), "显存使用率")
+            blk = MetricBlock(f"GPU {len(self.blocks)}", QIcon(get_resource_path("gui/icon/monitor_icon/gpu.png")), "显存使用率")
             self.blocks.append(blk)
             self.root.addWidget(blk)
         while len(self.blocks) > n:

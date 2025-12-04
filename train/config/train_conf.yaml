@@ -24,7 +24,7 @@ rect: false
 cos_lr: true
 close_mosaic: 70
 resume: false
-amp: true
+amp: True
 fraction: 1.0
 profile: false
 freeze: null

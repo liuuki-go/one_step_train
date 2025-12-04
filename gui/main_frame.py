@@ -1,26 +1,24 @@
 from PySide6.QtWidgets import QPushButton
-import os
-import yaml
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QStackedWidget, QSizePolicy
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget
 from PySide6.QtCore import QThread, Signal,Qt
 from core.dataset_builder import build_yolo_dataset
 from core.wsl_runner import build_train_cmd, run_stream
 from gui.pages.monitor_widget import MonitorWidget
-from gui.sys_settings_dialog import SystemSettingsDialog as SysSettingsDialog
+from gui.components.sys_settings_dialog import SystemSettingsDialog as SysSettingsDialog
 from gui.pages.run_page import RunPageWidget
 from gui.pages.build_page import BuildPageWidget
 from gui.pages.config_page import ConfigPageWidget
 from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
 from PySide6.QtGui import QIcon, QPixmap
-from gui.components.log_panel import LogPanelWidget
-from constants import SYS_SETTINGS_FILE
 from tools.sys_config_tools import get_wsl_config
-from core.monitor import shutdown as monitor_shutdown
+from tools.sys_config_tools import get_resource_path
 
 
 from threading import Event
+import os
+import shutil
 
 class LogThread(QThread):
     line = Signal(str)
@@ -50,8 +48,8 @@ class MainFrame(QMainWindow):
         self.log_thread = None
         self._is_closing = False
         
-    def _on_page_changed(self, idx):
-        pass
+    # def _on_page_changed(self, idx):
+    #     pass
     
     def _set_run_button_loading(self, loading: bool):
         try:
@@ -169,11 +167,11 @@ class MainFrame(QMainWindow):
         
 
         #设置左侧功能区的按钮和样式
-        btn_one = QPushButton("一键训练"); btn_one.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
-        btn_build = QPushButton("构建数据"); btn_build.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
-        btn_run = QPushButton("开始训练") ;btn_run.setIcon(QIcon("gui/icon/action_model_icon/run_train.png"))
-        btn_cfg = QPushButton("训练配置"); btn_cfg.setIcon(QIcon("gui/icon/action_model_icon/config.png"))
-        for b in (btn_one, btn_build, btn_run, btn_cfg):
+        btn_one = QPushButton("一键训练"); btn_one.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/one_step_train.png")))
+        btn_build = QPushButton("构建数据"); btn_build.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/build_dataset.png")))
+        btn_run = QPushButton("开始训练") ;btn_run.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/run_train.png")))
+        self.btn_cfg = QPushButton("训练配置"); self.btn_cfg.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/config.png")));self.btn_cfg.setEnabled(False)
+        for b in (btn_one, btn_build, btn_run, self.btn_cfg):
             b.setCheckable(True)
             b.setStyleSheet(
                 "QPushButton{font-size:12px;padding:10px 10px;text-align:left;border-radius:10px;}"
@@ -183,23 +181,24 @@ class MainFrame(QMainWindow):
         left_functions_layout.addWidget(btn_one)
         left_functions_layout.addWidget(btn_build)
         left_functions_layout.addWidget(btn_run)
-        left_functions_layout.addWidget(btn_cfg)
+        left_functions_layout.addWidget(self.btn_cfg)
         left_functions_layout.addStretch(1)
         #设置左侧工具区按钮
-
-        btn_tool_1 = QPushButton("btn_tool_1"); btn_tool_1.setIcon(QIcon("gui/icon/action_model_icon/one_step_train.png"))
-        btn_tool_2 = QPushButton("btn_tool_2"); btn_tool_2.setIcon(QIcon("gui/icon/action_model_icon/build_dataset.png"))
+        
+        btn_tool_1 = QPushButton("btn_tool_1"); btn_tool_1.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/one_step_train.png")))
+        btn_tool_2 = QPushButton("btn_tool_2"); btn_tool_2.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/build_dataset.png")))
         left_tools_layout.addWidget(btn_tool_1)
         left_tools_layout.addWidget(btn_tool_2)
         left_tools_layout.addStretch(1)
+
         #设置菜单
-        setup_menu(self, self._open_sys_settings, self._set_lang)
+        setup_menu(self, self._open_sys_settings, self._set_lang,self.btn_cfg)
 
         
         #创建一个按钮组，用于管理左侧功能区的按钮，确保只能选中一个
         action_group = QtWidgets.QButtonGroup(self)
         action_group.setExclusive(True) #设置按钮组为"互斥"模式
-        for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, btn_cfg)):  
+        for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, self.btn_cfg)):  
             action_group.addButton(b, i)
 
         btn_one.setChecked(True) #默认选中一键训练按钮
@@ -220,7 +219,7 @@ class MainFrame(QMainWindow):
         self.stack.addWidget(self.page_cfg) #索引3，训练配置页面
         # idClicked handles switching
         self.stack.setCurrentIndex(0) #默认选中构建数据页面
-        self.stack.currentChanged.connect(self._on_page_changed)
+        # self.stack.currentChanged.connect(self._on_page_changed)
         
         #创建右侧监控器，用于显示训练进度和日志
         self.monitor = MonitorWidget(); self.monitor.setStyleSheet("background-color: #F8FAFC;")
@@ -248,7 +247,7 @@ class MainFrame(QMainWindow):
 
     def _on_run_requested(self, dataset_root: str, export_path: str):
         # 启动训练
-        start_py = os.path.join(os.getcwd(), "start.py") # 训练脚本路径
+        start_py = get_resource_path("start.py") # 训练脚本路径
         cfg = get_wsl_config()
         conda_base = ""
         try:
@@ -310,7 +309,21 @@ class MainFrame(QMainWindow):
     
     
     def _open_sys_settings(self):
-        p = os.path.join(os.getcwd(), "sys_config.yaml")
+        # 确定本地配置文件路径
+        local_path = os.path.join(os.getcwd(), "sys_config.yaml")
+        # 确定打包的默认配置文件路径
+        bundled_path = get_resource_path("sys_config.yaml")
+        
+        # 如果本地文件不存在，且打包文件存在，则复制一份到本地
+        if not os.path.exists(local_path) and os.path.exists(bundled_path):
+            try:
+                shutil.copy(bundled_path, local_path)
+            except Exception:
+                pass # 如果写入失败（如权限问题），可能只能使用临时路径了
+        
+        # 如果本地文件现在存在了，就用本地的；否则回退到打包路径（只读或临时）
+        p = local_path if os.path.exists(local_path) else bundled_path
+        
         dlg = SysSettingsDialog(self, p)
         dlg.exec()
     

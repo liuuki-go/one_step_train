@@ -23,6 +23,16 @@ def _normalize_bbox(points: List[List[float]], iw: int, ih: int) -> Tuple[float,
     return x_center, y_center, w, h
 
 def json_to_yolo_lines(json_path: str, classes: List[str]) -> List[str]:
+    """
+    将 JSON 格式的标注转换为 YOLO 格式的行。
+
+    参数:
+        json_path (str): JSON 文件的路径。
+        classes (List[str]): 类别名称列表。
+
+    返回:
+        List[str]: 每个元素为一个 YOLO 格式的行，格式为 "class_id x_center y_center width height"。
+    """
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     iw = int(data.get("imageWidth"))
@@ -41,6 +51,15 @@ def json_to_yolo_lines(json_path: str, classes: List[str]) -> List[str]:
     return lines
 
 def pair_images_and_jsons(root: str) -> List[Tuple[str, str]]:
+    """
+    遍历目录，将每个图像文件与对应的 JSON 文件配对。
+
+    参数:
+        root (str): 包含图像和 JSON 文件的根目录。
+
+    返回:
+        List[Tuple[str, str]]: 每个元组包含一个图像路径和一个 JSON 路径。
+    """
     pairs = []
     for dirpath, _, filenames in os.walk(root):
         base_map: Dict[str, Dict[str, str]] = {}

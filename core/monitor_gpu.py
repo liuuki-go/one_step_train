@@ -15,7 +15,7 @@ def gpu_count():
     try:
         r = subprocess.run([
             "nvidia-smi", "--query-gpu=name", "--format=csv,noheader"
-        ], capture_output=True, text=True, timeout=2)
+        ], capture_output=True, text=True, timeout=2, creationflags=subprocess.CREATE_NO_WINDOW)
         if r.returncode == 0 and r.stdout.strip():
             return len([ln for ln in r.stdout.strip().splitlines() if ln.strip()])
     except Exception:
@@ -75,7 +75,7 @@ def query_gpus():
             "nvidia-smi",
             "--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu",
             "--format=csv,noheader,nounits"
-        ], capture_output=True, text=True, timeout=2)
+        ], capture_output=True, text=True, timeout=2, creationflags=subprocess.CREATE_NO_WINDOW)
         if r.returncode == 0 and r.stdout.strip():
             lines = [ln.strip() for ln in r.stdout.strip().splitlines() if ln.strip()]
             out = []

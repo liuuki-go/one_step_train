@@ -4,6 +4,7 @@ from gui.main_frame import MainFrame
 from PySide6.QtGui import QIcon
 from core.monitor import Monitor
 from core.monitor import shutdown as monitor_shutdown
+from tools.sys_config_tools import get_resource_path
 import os
 import ctypes
 
@@ -23,11 +24,6 @@ import ctypes
 """
 
 
-
-
-
-
-
 def main():
     """主函数，启动Libre Hardware Monitor并初始化GUI"""
     # 隐藏控制台窗口：
@@ -45,7 +41,7 @@ def main():
         
 
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon("gui/icon/system_icon.png"))
+    app.setWindowIcon(QIcon(get_resource_path("gui/icon/system_icon.png")))
     try:
         app.aboutToQuit.connect(monitor_shutdown)
     except Exception:

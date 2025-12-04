@@ -25,7 +25,7 @@ class Monitor:
                 if proc.info["name"] == LHM_PROCESS_NAME:
                     self.is_running = True
                     return True
-            exe = os.path.abspath(LHM_EXE_PATH)
+            exe = get_resource_path(LHM_EXE_PATH)
             if not self._is_admin():
                 rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, None, None, 0)
                 if rc <= 32:

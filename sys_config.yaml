@@ -1,8 +1,8 @@
 wsl:
   conda:
     env_path: /home/meineng/enter
+gui:
+  log:
+    log_path: null
+    level: info
 
-log:
-  log_path: 
-  level: info
-  

@@ -23,25 +23,11 @@ class SystemSettingsDialog(QDialog):
         self.panel = QWidget()
         self.form = QFormLayout(self.panel)
         self.right.setWidget(self.panel)
-        self.right.setStyleSheet(
-            "QScrollArea{background:#0d0f13;border:1px solid #22262e;}"
-            "QWidget{background:#0d0f13;}"
-        )
-        self.setStyleSheet(
-            "QDialog{background:#0f1115;color:#e6edf3;}"
-            "QListWidget{background:#0d0f13;border:1px solid #22262e;color:#e6edf3;}"
-            "QLabel{color:#c9d1d9;}"
-            "QLineEdit, QSpinBox, QDoubleSpinBox{background:#0d0f13;border:1px solid #30363d;color:#e6edf3;padding:4px;border-radius:6px;}"
-            "QPushButton{background:#1f6feb;color:#fff;border:none;padding:6px 10px;border-radius:6px;}"
-            "QPushButton:hover{background:#388bfd;}"
-        )
-        btns = QtWidgets.QHBoxLayout()
-        self.btn_close = QPushButton("关闭")
-        self.btn_close.clicked.connect(self.close)
+
+
         root.addWidget(self.left)
         root.addWidget(self.mid)
         root.addWidget(self.right, 1)
-        root.addLayout(btns)
         self.row_paths = []
         self._load()
         self.left.currentRowChanged.connect(self._switch)
