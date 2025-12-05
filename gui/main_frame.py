@@ -185,8 +185,8 @@ class MainFrame(QMainWindow):
         left_functions_layout.addStretch(1)
         #设置左侧工具区按钮
         
-        btn_tool_1 = QPushButton("btn_tool_1"); btn_tool_1.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/one_step_train.png")))
-        btn_tool_2 = QPushButton("btn_tool_2"); btn_tool_2.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/build_dataset.png")))
+        btn_tool_1 = QPushButton("标签处理"); btn_tool_1.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/one_step_train.png")))
+        btn_tool_2 = QPushButton("模型转换"); btn_tool_2.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/build_dataset.png")))
         left_tools_layout.addWidget(btn_tool_1)
         left_tools_layout.addWidget(btn_tool_2)
         left_tools_layout.addStretch(1)

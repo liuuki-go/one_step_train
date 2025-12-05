@@ -1,4 +1,5 @@
 import yaml
+import copy
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QScrollArea, QWidget, QFormLayout, QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QPushButton, QMessageBox
 
@@ -29,18 +30,19 @@ class SystemSettingsDialog(QDialog):
         root.addWidget(self.mid)
         root.addWidget(self.right, 1)
         self.row_paths = []
+        self._active_left_index = -1
         self._load()
         self.left.currentRowChanged.connect(self._switch)
         self.mid.currentRowChanged.connect(self._switch2)
         if self.left.count():
             self.left.setCurrentRow(0)
-            self._switch(0)
     def _load(self):
         try:
             with open(self.path, "r", encoding="utf-8") as f:
                 self.data = yaml.safe_load(f) or {}
         except Exception:
             self.data = {}
+        self._active_left_index = -1
         self.left.clear()
         for k in self.data.keys():
             self.left.addItem(QListWidgetItem(str(k)))
@@ -55,10 +57,15 @@ class SystemSettingsDialog(QDialog):
             w = QLineEdit(yaml.safe_dump(val, allow_unicode=True, sort_keys=False) if not isinstance(val, str) else str(val)); return w
         return QLineEdit(str(val))
     def _switch(self, idx: int):
-        try:
-            self._apply_current()
-        except Exception:
-            pass
+        # 切换左侧菜单前，先保存上一个选中的配置（使用旧的索引）
+        if self._active_left_index >= 0 and self._active_left_index < self.left.count():
+            try:
+                self._apply_current(self._active_left_index)
+            except Exception:
+                pass
+        
+        self._active_left_index = idx
+        
         while self.form.rowCount():
             self.form.removeRow(0)
         if idx < 0:
@@ -76,10 +83,13 @@ class SystemSettingsDialog(QDialog):
             self.mid.addItem(QListWidgetItem(str(k)))
         self._current_section = section
     def _switch2(self, idx: int):
-        try:
-            self._apply_current()
-        except Exception:
-            pass
+        # 切换中间菜单，此时左侧索引未变，直接保存当前（左侧）索引对应的配置
+        if self._active_left_index >= 0:
+            try:
+                self._apply_current(self._active_left_index)
+            except Exception:
+                pass
+                
         while self.form.rowCount():
             self.form.removeRow(0)
         if idx < 0:
@@ -136,13 +146,16 @@ class SystemSettingsDialog(QDialog):
                 cur[k] = {}
             cur = cur[k]
         cur[path[-1]] = value
-    def _collect(self) -> dict:
-        idx = self.left.currentRow()
+    def _collect(self, idx: int = -1) -> dict:
         if idx < 0:
+            idx = self.left.currentRow()
+        if idx < 0 or idx >= self.left.count():
             return {}
         key = self.left.item(idx).text()
         section = self.data.get(key, {})
-        out = yaml.safe_load(yaml.safe_dump(section, allow_unicode=True, sort_keys=False)) if isinstance(section, dict) else {}
+        # 使用 deepcopy 替代 yaml dump/load，避免重复记录和性能损耗
+        out = copy.deepcopy(section) if isinstance(section, dict) else {}
+        
         i = 0
         while i < self.form.rowCount():
             lab = self.form.itemAt(i, QFormLayout.ItemRole.LabelRole).widget()
@@ -171,12 +184,14 @@ class SystemSettingsDialog(QDialog):
             self._set_by_path(out, path, val)
             i += 1
         return {key: out}
-    def _apply_current(self):
-        idx = self.left.currentRow()
-        if idx is None or idx < 0:
+    def _apply_current(self, idx: int = -1):
+        if idx < 0:
+            idx = self.left.currentRow()
+        if idx < 0 or idx >= self.left.count():
             return
+        collected = self._collect(idx)
         key = self.left.item(idx).text()
-        upd = self._collect().get(key, {})
+        upd = collected.get(key, {})
         if isinstance(upd, dict):
             self.data[key] = upd
     def closeEvent(self, e):

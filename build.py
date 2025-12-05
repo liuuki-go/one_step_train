@@ -21,6 +21,7 @@ def build():
         # ("models", "models"),             # 外部暴露
         # ("start.py", "."),                # 外部暴露
         # ("sys_config.yaml", "."),         # 外部暴露
+
     ]
 
     # 构建 --add-data 参数
@@ -70,7 +71,7 @@ def build():
     # PyInstaller 参数
     args = [
         "main.py",                      # 入口脚本
-        "--name=one_step_train",        # 生成的 exe 名称
+        "--name=OneST",        # 生成的 exe 名称
         "--noconsole",                  # 不显示控制台窗口
         "--onedir",                     # 多文件/目录打包 (方便修改资源)
         "--clean",                      # 清理缓存
@@ -102,6 +103,7 @@ def build():
         ("start.py", "start.py"),
         ("models", "models"),
         ("train/config", "train/config"),
+        ("yolo11n.pt", "yolo11n.pt"),
     ]
 
     for src, dst_rel in exposed_resources:

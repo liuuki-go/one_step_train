@@ -4,5 +4,4 @@ wsl:
 gui:
   log:
     log_path: null
-    level: info
-
+    level: debug

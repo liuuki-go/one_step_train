@@ -62,7 +62,6 @@ def run_stream(cmd: List[str], on_line: Callable[[str], None], stop_event=None) 
         return -1 # 手动停止
     return p.wait()
 """WSL 训练命令构建与流式输出工具。
-
 - `win_to_wsl_path` 将 Windows 路径转换为 WSL 挂载路径。
 - `build_train_cmd` 按是否提供 `conda_base` 构建可在 WSL 中执行的训练命令。
 - `run_stream` 启动子进程并去除 ANSI 颜色码，逐行回调输出。

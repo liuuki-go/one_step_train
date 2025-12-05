@@ -1,6 +1,5 @@
 # custom_checkbox.py
 from PySide6.QtWidgets import QCheckBox
-from PySide6.QtCore import Qt
 from tools.sys_config_tools import get_resource_path
 
 def _get_path(p):

@@ -5,6 +5,7 @@ import yaml
 import tempfile
 from typing import List, Tuple
 from .dataset_converter import load_classes, json_to_yolo_lines, pair_images_and_jsons
+from .wsl_runner import win_to_wsl_path
 
 def _ensure_dirs(root: str):
     for split in ["train", "val", "test"]:
@@ -57,7 +58,7 @@ def build_yolo_dataset(src_dir: str, classes_path: str, ratios: Tuple[int, int, 
         shutil.copy2(img, dst_img)
         _write_label(dst_lbl, lines)
     data_yaml = {
-        "path": root.replace("\\", "/"),
+        "path": win_to_wsl_path(root),
         "train": "images/train",
         "val": "images/val",
         "test": "images/test",
