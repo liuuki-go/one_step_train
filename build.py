@@ -85,6 +85,8 @@ def build():
         "--hidden-import=PySide6",
         "--hidden-import=ctypes",       # 显式添加 ctypes
         "--hidden-import=_ctypes",      # 显式添加 _ctypes
+        "--hidden-import=tensorrt",          # 显式添加 tensorrt
+  
         
     ] + add_data_args + add_binary_args + paths_args
 

@@ -9,7 +9,7 @@ from ultralytics import YOLO #type: ignore
 
 def train_with_cfg(data: str, export_path: str):
     model = YOLO("./models/yolo11n.pt")
-    ts = time.strftime("%y-%m-%d_%H:%M", time.localtime())
+    ts = time.strftime("%y-%m%d_%H%M", time.localtime())
     print(f"export_path: {export_path}")
     train_results = model.train(
         cfg="./train/config/train_conf.yaml",

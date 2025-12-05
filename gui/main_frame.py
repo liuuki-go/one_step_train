@@ -9,6 +9,9 @@ from gui.components.sys_settings_dialog import SystemSettingsDialog as SysSettin
 from gui.pages.run_page import RunPageWidget
 from gui.pages.build_page import BuildPageWidget
 from gui.pages.config_page import ConfigPageWidget
+from gui.pages.label_processor_page import LabelProcessorPageWidget
+from gui.pages.build_engine_page import BuildEnginePageWidget
+
 from gui.components.app_menu import setup_menu
 from gui.pages.one_click_page import OneClickPageWidget
 from PySide6.QtGui import QIcon, QPixmap
@@ -187,6 +190,13 @@ class MainFrame(QMainWindow):
         
         btn_tool_1 = QPushButton("标签处理"); btn_tool_1.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/one_step_train.png")))
         btn_tool_2 = QPushButton("模型转换"); btn_tool_2.setIcon(QIcon(get_resource_path("gui/icon/action_model_icon/build_dataset.png")))
+        for b in (btn_tool_1, btn_tool_2):
+            b.setCheckable(True)
+            b.setStyleSheet(
+                "QPushButton{font-size:12px;padding:10px 10px;text-align:left;border-radius:10px;}"
+                "QPushButton:checked{background:#e6f0ff;color:#0366d6;}"
+                "QPushButton:hover{background:#f0f6ff;}"
+        )
         left_tools_layout.addWidget(btn_tool_1)
         left_tools_layout.addWidget(btn_tool_2)
         left_tools_layout.addStretch(1)
@@ -198,7 +208,7 @@ class MainFrame(QMainWindow):
         #创建一个按钮组，用于管理左侧功能区的按钮，确保只能选中一个
         action_group = QtWidgets.QButtonGroup(self)
         action_group.setExclusive(True) #设置按钮组为"互斥"模式
-        for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, self.btn_cfg)):  
+        for i, b in enumerate[QPushButton]((btn_one, btn_build, btn_run, self.btn_cfg, btn_tool_1, btn_tool_2)):  
             action_group.addButton(b, i)
 
         btn_one.setChecked(True) #默认选中一键训练按钮
@@ -217,6 +227,8 @@ class MainFrame(QMainWindow):
         self.stack.addWidget(self.page_build) #索引1，构建数据页面
         self.stack.addWidget(self.page_run) #索引2，开始训练页面
         self.stack.addWidget(self.page_cfg) #索引3，训练配置页面
+        self.stack.addWidget(LabelProcessorPageWidget()) #索引4，标签处理页面
+        self.stack.addWidget(BuildEnginePageWidget()) #索引5，模型转换页面
         # idClicked handles switching
         self.stack.setCurrentIndex(0) #默认选中构建数据页面
         # self.stack.currentChanged.connect(self._on_page_changed)

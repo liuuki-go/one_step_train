@@ -109,9 +109,9 @@ class MetricBlock(QWidget):
         return "#dc0000"
 
     def _bar_color_temp(self, v: float) -> str:
-        if v < 50:
+        if v < 60:
             return "#00a35a"
-        if v < 75:
+        if v < 80:
             return "#ffbf00"
         return "#dc0000"
 
