@@ -1,6 +1,7 @@
 import yaml
 import copy
 from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QScrollArea, QWidget, QFormLayout, QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QPushButton, QMessageBox
 
 class SystemSettingsDialog(QDialog):
@@ -10,10 +11,13 @@ class SystemSettingsDialog(QDialog):
     """
     def __init__(self, parent, path: str):
         super().__init__(parent)
-        self.setWindowTitle("系统设置")
-        self.resize(800, 500)
         self.path = path
         self.data = {}
+        self.initUI()
+        self.retranslateUi()
+
+    def initUI(self):
+        self.resize(800, 500)
         root = QHBoxLayout(self)
         self.left = QListWidget()
         self.left.setFixedWidth(180)
@@ -25,7 +29,6 @@ class SystemSettingsDialog(QDialog):
         self.form = QFormLayout(self.panel)
         self.right.setWidget(self.panel)
 
-
         root.addWidget(self.left)
         root.addWidget(self.mid)
         root.addWidget(self.right, 1)
@@ -36,6 +39,15 @@ class SystemSettingsDialog(QDialog):
         self.mid.currentRowChanged.connect(self._switch2)
         if self.left.count():
             self.left.setCurrentRow(0)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.setWindowTitle(self.tr("系统设置"))
+
     def _load(self):
         try:
             with open(self.path, "r", encoding="utf-8") as f:

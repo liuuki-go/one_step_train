@@ -1,6 +1,7 @@
 import os
 import yaml
 from PySide6 import QtWidgets
+from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QScrollArea, QFormLayout
 from tools.sys_config_tools import get_resource_path
 from gui.style.CheckButtonStyleManager import StyledCheckBox
@@ -18,14 +19,18 @@ class ConfigPageWidget(QWidget):
     """训练配置页：加载 YAML，生成编辑器，支持保存与导出。"""
     def __init__(self):
         super().__init__()
+        self.initUI()
+
+    def initUI(self):
         layout = QVBoxLayout(self)
         form_top = QGridLayout()
       
         self.ed_cfg_path = QLineEdit(get_resource_path("train/config/train_conf.yaml"))
-        b0 = QPushButton("选择"); b0.clicked.connect(self._pick_cfg)
+        self.btn_pick = QPushButton("选择")
+        self.btn_pick.clicked.connect(self._pick_cfg)
         
         form_top.addWidget(self.ed_cfg_path, 0, 1)
-        form_top.addWidget(b0, 0, 2)
+        form_top.addWidget(self.btn_pick, 0, 2)
         # layout.addLayout(form_top)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
@@ -45,12 +50,27 @@ class ConfigPageWidget(QWidget):
         btns.addWidget(self.btn_export_cfg)
         layout.addLayout(btns)
         self.cfg_editors = {}
+
+        self.retranslateUi()
+
         try:
             self._on_load_cfg_clicked()
         except Exception:
             pass
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.btn_pick.setText(self.tr("选择"))
+        self.btn_load_cfg.setText(self.tr("加载配置"))
+        self.btn_save_cfg.setText(self.tr("保存配置"))
+        self.btn_export_cfg.setText(self.tr("导出配置"))
+
     def _pick_cfg(self):
-        p, _ = QFileDialog.getOpenFileName(self, "选择配置", filter="YAML (*.yaml)")
+        p, _ = QFileDialog.getOpenFileName(self, self.tr("选择配置"), filter="YAML (*.yaml)")
         if p:
             self.ed_cfg_path.setText(p)
     def _make_editor(self, key, val):
@@ -98,13 +118,13 @@ class ConfigPageWidget(QWidget):
                 try:
                     out[k] = yaml.safe_load(w.text())
                 except Exception:
-                    QtWidgets.QMessageBox.warning(self, "错误", f"字段 {k} 无法解析为有效结构")
+                    QtWidgets.QMessageBox.warning(self, self.tr("错误"), self.tr("字段") + f" {k} " + self.tr("无法解析为有效结构"))
                     return
             else:
                 out[k] = w.text()
         with open(p, "w", encoding="utf-8") as f:
             yaml.safe_dump(out, f, allow_unicode=True, sort_keys=False)
-        QtWidgets.QMessageBox.information(self, "成功", "配置已保存")
+        QtWidgets.QMessageBox.information(self, self.tr("成功"), self.tr("配置已保存"))
     def _on_export_cfg_clicked(self):
         p = self.ed_cfg_path.text().strip()
         if not p:
@@ -125,13 +145,13 @@ class ConfigPageWidget(QWidget):
                 try:
                     d[k] = yaml.safe_load(w.text())
                 except Exception:
-                    QtWidgets.QMessageBox.warning(self, "错误", f"字段 {k} 无法解析为有效结构")
+                    QtWidgets.QMessageBox.warning(self, self.tr("错误"), self.tr("字段") + f" {k} " + self.tr("无法解析为有效结构"))
                     return
             else:
                 d[k] = w.text()
-        tgt, _ = QFileDialog.getSaveFileName(self, "导出配置", filter="YAML (*.yaml)")
+        tgt, _ = QFileDialog.getSaveFileName(self, self.tr("导出配置"), filter="YAML (*.yaml)")
         if not tgt:
             return
         with open(tgt, "w", encoding="utf-8") as f:
             yaml.safe_dump(d, f, allow_unicode=True, sort_keys=False)
-        QtWidgets.QMessageBox.information(self, "成功", "配置已导出")
+        QtWidgets.QMessageBox.information(self, self.tr("成功"), self.tr("配置已导出"))

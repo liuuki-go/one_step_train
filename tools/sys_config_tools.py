@@ -26,6 +26,17 @@ def _load_sys_cfg() -> dict:
         _cached_cfg = {}
     return _cached_cfg
 
+def save_sys_cfg(data: dict):
+    """保存系统配置到本地 sys_config.yaml"""
+    local_path = os.path.join(os.getcwd(), "sys_config.yaml")
+    try:
+        with open(local_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
+        global _cached_cfg
+        _cached_cfg = data
+    except Exception as e:
+        print(f"Failed to save sys_config.yaml: {e}")
+
 def get_wsl_config(yaml_path: str | None = None) -> dict:
     d = _load_sys_cfg()
     return d.get("wsl", {}) if isinstance(d, dict) else {}
@@ -54,4 +65,14 @@ def get_resource_path(relative_path):
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 开发时
         
     return os.path.join(base_path, relative_path)
+
+
+def get_net_mac():
+    #获取机器的网卡的mac地址
+    import uuid
+    mac = uuid.UUID(int=uuid.getnode()).hex[-12:].upper()
+    if mac:
+        return mac
+    else:
+        return "000000000000"
 

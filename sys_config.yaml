@@ -5,3 +5,6 @@ gui:
   log:
     log_path: null
     level: debug
+  languages:
+    language: zh
+language: zh

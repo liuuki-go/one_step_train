@@ -2,6 +2,7 @@ from PySide6 import QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit
 from PySide6.QtWidgets import QSizePolicy, QFrame, QGraphicsDropShadowEffect
 from PySide6.QtGui import QColor
+from PySide6.QtCore import QEvent
 from gui.style.ButtonStyleManager import StyledButton
 
 class LogPanelWidget(QWidget):
@@ -45,6 +46,8 @@ class LogPanelWidget(QWidget):
 
         self.console.textChanged.connect(self._limit_lines)
 
+        self.retranslateUi()
+
     def append(self, s: str):
         self.console.append(s)
 
@@ -58,7 +61,7 @@ class LogPanelWidget(QWidget):
         try:
             import os
             default = os.path.join(os.path.join(os.environ.get('USERPROFILE', os.getcwd())), 'Desktop', 'oneST-log.txt')
-            fn, _ = QtWidgets.QFileDialog.getSaveFileName(self, "保存日志", default, "Text Files (*.txt);;All Files (*.*)")
+            fn, _ = QtWidgets.QFileDialog.getSaveFileName(self, self.tr("保存日志"), default, "Text Files (*.txt);;All Files (*.*)")
             if fn:
                 with open(fn, 'w', encoding='utf-8') as f:
                     f.write(self.console.toPlainText())
@@ -79,3 +82,15 @@ class LogPanelWidget(QWidget):
             self.console.setPlainText('\n'.join(lines))
             self.console.moveCursor(self.console.textCursor().End) #type: ignore
         self.console.textChanged.connect(self._limit_lines)
+
+    def setTitle(self, title: str):
+        self.console.setPlaceholderText(title)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.btn_clear.setText(self.tr("清空日志"))
+        self.btn_save.setText(self.tr("保存日志"))

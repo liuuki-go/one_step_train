@@ -1,5 +1,5 @@
 from PySide6 import QtWidgets
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QEvent
 from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QSpinBox, QCheckBox, QComboBox, QHBoxLayout, QSpacerItem, QSizePolicy
 from gui.style.ButtonStyleManager import StyledButton
 from gui.style.CheckButtonStyleManager import StyledCheckBox
@@ -12,6 +12,37 @@ class OneClickPageWidget(QWidget):
     stopRequested = Signal() # 新增停止信号
     def __init__(self):
         super().__init__()
+        self.initUI()
+        self.retranslateUi()
+
+
+
+
+
+        
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.label_src.setText(self.tr("标注数据文件夹："))
+        self.btn_src.setText(self.tr("选择文件夹"))
+        self.lbl_cls_b.setText(self.tr("分类文本文件："))
+        self.btn_cls.setText(self.tr("选择文件"))
+        self.lbl_ratio_b.setText(self.tr("划分数据集比例(训练集:验证集:测试集):"))
+        self.lbl_fmt.setText(self.tr("数据集格式："))
+        self.ck_persist.setText(self.tr("是否持久化数据集"))
+        self.btn_out.setText(self.tr("选择输出目录"))
+        self.lb_out_src.setText(self.tr("结果输出路径："))
+        self.btn_out_src.setText(self.tr("选择文件夹"))
+        self.btn_run_one.setText(self.tr("一键训练"))
+        self.btn_stop_train.setText(self.tr("停止训练"))
+        self.log_panel.setTitle(self.tr("处理日志"))
+        self._validate_ratios()
+
+    def initUI(self):
         root = QtWidgets.QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 5)
         root.setSpacing(4)
@@ -19,16 +50,16 @@ class OneClickPageWidget(QWidget):
 
         self.label_src = QLabel("标注数据文件夹：");self.label_src.setFixedWidth(120)
         self.ed_src = QLineEdit();self.ed_src.setText("C:/Users/Administrator/Desktop/test")
-        btn_src = StyledButton("选择文件夹", "select_bt"); btn_src.clicked.connect(self._pick_src)
+        self.btn_src = StyledButton("选择文件夹", "select_bt"); self.btn_src.clicked.connect(self._pick_src)
         self.row_src = QWidget(); r0 = QtWidgets.QHBoxLayout(self.row_src); r0.setContentsMargins(0,0,0,0); r0.setSpacing(5)
-        r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(btn_src)
+        r0.addWidget(self.label_src); r0.addWidget(self.ed_src, 1); r0.addWidget(self.btn_src)
         root.addWidget(self.row_src)
 
         self.lbl_cls_b = QLabel("分类文本文件：");self.lbl_cls_b.setFixedWidth(120)
         self.ed_cls_b = QLineEdit(); self.ed_cls_b.setText("C:/Users/Administrator/Desktop/classes.txt")
-        btn_cls = StyledButton("选择文件", "select_bt"); btn_cls.clicked.connect(self._pick_cls)
+        self.btn_cls = StyledButton("选择文件", "select_bt"); self.btn_cls.clicked.connect(self._pick_cls)
         self.row_cls = QWidget(); r1 = QtWidgets.QHBoxLayout(self.row_cls); r1.setContentsMargins(0,0,0,0); r1.setSpacing(5)
-        r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(btn_cls)
+        r1.addWidget(self.lbl_cls_b); r1.addWidget(self.ed_cls_b, 1); r1.addWidget(self.btn_cls)
         root.addWidget(self.row_cls)
 
         # 数据集划分比例、格式、持久化, 放到一个行中显示
@@ -49,7 +80,7 @@ class OneClickPageWidget(QWidget):
         hb.addWidget(self.sp_test_b)
         hb.addStretch(1)
         self.row_ratio = QWidget(); r2 = QtWidgets.QHBoxLayout(self.row_ratio); r2.setContentsMargins(0,0,0,0); r2.setSpacing(0)
-
+        
         r2.addWidget(self.lbl_ratio_b); r2.addWidget(ratio_box, 1)
     
     
@@ -95,9 +126,9 @@ class OneClickPageWidget(QWidget):
         import os
         desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
         self.ed_out_src.setText(desktop)
-        btn_out_src = StyledButton("选择文件夹", "select_bt"); btn_out_src.clicked.connect(self._pick_out_src)
+        self.btn_out_src = StyledButton("选择文件夹", "select_bt"); self.btn_out_src.clicked.connect(self._pick_out_src)
         self.row_out_src = QWidget(); r6 = QtWidgets.QHBoxLayout(self.row_out_src); r6.setContentsMargins(0,0,0,0); r6.setSpacing(5)
-        r6.addWidget(self.lb_out_src); r6.addWidget(self.ed_out_src, 1); r6.addWidget(btn_out_src)
+        r6.addWidget(self.lb_out_src); r6.addWidget(self.ed_out_src, 1); r6.addWidget(self.btn_out_src)
         root.addWidget(self.row_out_src)
 
 
@@ -146,7 +177,7 @@ class OneClickPageWidget(QWidget):
         test = self.sp_test_b.value()
         total = train + val + test
         if total != 10:
-            self.lbl_error.setText(f"温馨提示：比例总和需要为10，否则无法开启一键训练,当前总和为{total}")
+            self.lbl_error.setText(self.tr("温馨提示：比例总和需要为10，否则无法开启一键训练,当前总和为") + f"{total}")
             self.lbl_error.setVisible(True)
             try:
                 self.error_box.setFixedHeight(38)
@@ -162,40 +193,40 @@ class OneClickPageWidget(QWidget):
             self.btn_run_one.setEnabled(True)
             
     def _pick_src(self):
-        d = QFileDialog.getExistingDirectory(self, "选择标注文件夹")
+        d = QFileDialog.getExistingDirectory(self, self.tr("选择标注文件夹"))
         if d:
             self.ed_src.setText(d)
 
     def _pick_out_src(self):
-        d = QFileDialog.getExistingDirectory(self, "选择标注文件夹")
+        d = QFileDialog.getExistingDirectory(self, self.tr("选择标注文件夹"))
         if d:
             self.ed_out_src.setText(d)
     def _pick_cls(self):
-        p, _ = QFileDialog.getOpenFileName(self, "选择 classes.txt", filter="Text (*.txt)")
+        p, _ = QFileDialog.getOpenFileName(self, self.tr("选择 classes.txt"), filter="Text (*.txt)")
         if p:
             self.ed_cls_b.setText(p)
     def _pick_out(self):
-        d = QFileDialog.getExistingDirectory(self, "选择输出数据集路径")
+        d = QFileDialog.getExistingDirectory(self, self.tr("选择输出数据集路径"))
         if d:
             self.ed_out.setText(d)
     def _emit_one_click(self):
         #判断输入合法性
         if not self.ed_src.text().strip():
-            QtWidgets.QMessageBox.warning(self, "警告！", "标注数据集文件夹路径不可为空！请检查后再执行操作。")
+            QtWidgets.QMessageBox.warning(self, self.tr("警告！"), self.tr("标注数据集文件夹路径不可为空！请检查后再执行操作。"))
             return
         if not self.ed_cls_b.text().strip():
-            QtWidgets.QMessageBox.warning(self, "警告！", "类别文件路径不可为空！请检查后再执行操作。")
+            QtWidgets.QMessageBox.warning(self, self.tr("警告！"), self.tr("类别文件路径不可为空！请检查后再执行操作。"))
             return
         if self.ck_persist.isChecked() and not self.ed_out.text().strip():
-            QtWidgets.QMessageBox.warning(self, "警告！", "已选择持久化数据集，输出数据集路径不可为空！请检查后再执行操作。")
+            QtWidgets.QMessageBox.warning(self, self.tr("警告！"), self.tr("已选择持久化数据集，输出数据集路径不可为空！请检查后再执行操作。"))
             return
         if not self.ed_out_src.text().strip():
-            QtWidgets.QMessageBox.warning(self, "警告！", "结果输出路径不可为空！请检查后再执行操作。")
+            QtWidgets.QMessageBox.warning(self, self.tr("警告！"), self.tr("结果输出路径不可为空！请检查后再执行操作。"))
             return
         
     
 
-        self.btn_run_one.setEnabled(False); self.btn_run_one.setText("训练中")
+        self.btn_run_one.setEnabled(False); self.btn_run_one.setText(self.tr("训练中"))
         self.btn_stop_train.setEnabled(True) # 启用停止按钮
         src = self.ed_src.text().strip()
         cls = self.ed_cls_b.text().strip()
@@ -206,11 +237,12 @@ class OneClickPageWidget(QWidget):
         fmt = self.cb_fmt.currentText()
         self.oneClickRequested.emit(src, cls, ratios, persist, out_dir,out_src,fmt)
 
+
    
 
     def _emit_stop(self):
         self.stopRequested.emit()
         self.btn_stop_train.setEnabled(False) # 防止重复点击
-        self.append_log("正在停止训练...")
+        self.append_log(self.tr("正在停止训练..."))
         
   

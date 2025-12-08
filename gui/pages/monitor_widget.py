@@ -1,7 +1,7 @@
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QGridLayout
 from PySide6.QtGui import QPainter, QColor, QPen
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, QEvent
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QProgressBar
 from core.monitor import get_cpu_name, cpu_temperature, cpu_load, memory_load, memory_data
@@ -30,7 +30,7 @@ class RingGauge(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w = self.width()
         h = self.height()
-        r = min(w, h) - 8
+        r = min(w, h) - 18
         rect = QRectF((w - r) / 2, (h - r) / 2, r, r)
         base = QPen(QColor(225, 228, 232), 10)
         p.setPen(base)
@@ -46,16 +46,20 @@ class MetricBlock(QWidget):
     '''
     指标块组件
     '''
-    def __init__(self, title: str, icon, caption: str):
+    def __init__(self, title: str, icon):
         super().__init__()
+        self.title_text = title
         self.setStyleSheet("QWidget{background:#f6f8fa;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
-        root = QHBoxLayout(self)
-        left = QVBoxLayout()
-        top = QHBoxLayout()
+        self.initUI(icon)
+
+    def initUI(self, icon):
+        root = QHBoxLayout(self); root.setContentsMargins(10, 10, 0, 10); root.setSpacing(10)
+        left = QVBoxLayout(); left.setContentsMargins(0, 0, 0, 0)
+        top = QHBoxLayout(); top.setContentsMargins(0, 0, 0, 0)
         self.icon = QLabel()
         self.icon.setPixmap(icon.pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
-        self.title = QLabel(title)
+        self.title = QLabel(self.title_text)
         self.title.setStyleSheet("QLabel{font-size:13px;font-weight:600;border:0;background:#f6f8fa;}")
         top.addWidget(self.icon)
         top.addWidget(self.title)
@@ -67,8 +71,8 @@ class MetricBlock(QWidget):
         self.extra.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         left.addWidget(self.extra)
         row_width = 120
-        self.util_row = QHBoxLayout()
-        self.util_label = QLabel("利用率")
+        self.util_row = QHBoxLayout(); self.util_row.setContentsMargins(0, 0, 0, 0)
+        self.util_label = QLabel()
         self.util_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.util_bar = QProgressBar()
         self.util_bar.setRange(0, 100)
@@ -78,8 +82,8 @@ class MetricBlock(QWidget):
         self.util_row.addWidget(self.util_bar)
         self.util_row.addStretch(1);self.util_row.setSpacing(10)
         left.addLayout(self.util_row)
-        self.temp_row = QHBoxLayout()
-        self.temp_label = QLabel("温度")
+        self.temp_row = QHBoxLayout(); self.temp_row.setContentsMargins(0, 0, 0, 0)
+        self.temp_label = QLabel()
         self.temp_label.setStyleSheet("QLabel{font-size:12px;padding:0 0 0 0px;border:0;background:#f6f8fa;}")
         self.temp_bar = QProgressBar()
         self.temp_bar.setRange(0, 85)
@@ -91,15 +95,28 @@ class MetricBlock(QWidget):
         left.addLayout(self.temp_row)
         left.addWidget(self.detail)
         left.addStretch(1)
-        root.addLayout(left, 1)
+        root.addLayout(left, 0)
 
-        right = QVBoxLayout();right.setContentsMargins(0, 20, 0, 0)
+        right = QVBoxLayout();right.setContentsMargins(10, 10, 0, 0)
         self.gauge = RingGauge(QColor(3, 102, 214))
-        self.gauge_title = QLabel(caption)
+        self.gauge_title = QLabel()
         self.gauge_title.setStyleSheet("QLabel{color:#666;}")
         right.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         right.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        root.addLayout(right)
+        root.addLayout(right, 0)
+        root.addStretch(1)
+        
+        self.retranslateUi()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)  
+
+    def retranslateUi(self):
+        self.util_label.setText(self.tr("利用率"))
+        self.temp_label.setText(self.tr("温度"))
+        self.gauge_title.setText(self.tr("显存使用率"))
 
     def _bar_color(self, v: float) -> str:
         if v < 55:
@@ -119,9 +136,12 @@ class cpu_monitor_widget(QWidget):
     def __init__(self):
         super().__init__()
         self.setStyleSheet("QWidget{background:#f6f8fa;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
-        root = QHBoxLayout(self)
-        left = QVBoxLayout()
-        top = QHBoxLayout()
+        self.initUI()
+        
+    def initUI(self):
+        root = QHBoxLayout(self); root.setContentsMargins(10, 10, 0, 10); root.setSpacing(10)
+        left = QVBoxLayout(); left.setContentsMargins(0, 0, 0, 0)
+        top = QHBoxLayout(); top.setContentsMargins(0, 0, 0, 0)
         self.icon = QLabel()
         self.icon.setPixmap(QIcon(get_resource_path("gui/icon/monitor_icon/host_cpu.png")).pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
@@ -133,7 +153,7 @@ class cpu_monitor_widget(QWidget):
         left.addLayout(top)
         row_width = 120
         self.avg_row = QHBoxLayout();self.avg_row.setContentsMargins(0, 0, 0, 0);self.avg_row.setSpacing(0)
-        self.avg_label = QLabel("平均温度")
+        self.avg_label = QLabel()
         self.avg_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.avg_bar = QProgressBar()
         self.avg_bar.setRange(0, 90)
@@ -143,8 +163,8 @@ class cpu_monitor_widget(QWidget):
         self.avg_row.addWidget(self.avg_bar)
         self.avg_row.addStretch(1);self.avg_row.setSpacing(10)
         left.addLayout(self.avg_row)
-        self.max_row = QHBoxLayout()
-        self.max_label = QLabel("最大温度")
+        self.max_row = QHBoxLayout(); self.max_row.setContentsMargins(0, 0, 0, 0)
+        self.max_label = QLabel()
         self.max_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.max_bar = QProgressBar()
         self.max_bar.setRange(0, 90)
@@ -154,8 +174,8 @@ class cpu_monitor_widget(QWidget):
         self.max_row.addWidget(self.max_bar)
         self.max_row.addStretch(1);self.max_row.setSpacing(10)
         left.addLayout(self.max_row)
-        self.load_row = QHBoxLayout()
-        self.load_label = QLabel("CPU负载")
+        self.load_row = QHBoxLayout(); self.load_row.setContentsMargins(0, 0, 0, 0)
+        self.load_label = QLabel()
         self.load_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.load_bar = QProgressBar()
         self.load_bar.setRange(0, 100)
@@ -171,15 +191,30 @@ class cpu_monitor_widget(QWidget):
         self.load_row.addWidget(self.load_bar)
         self.load_row.addStretch(1);self.load_row.setSpacing(10)
         left.addLayout(self.load_row)
-        root.addLayout(left, 1)
+        root.addLayout(left, 0)
 
-        right = QVBoxLayout();right.setContentsMargins(0, 20, 0, 0)
+        right = QVBoxLayout();right.setContentsMargins(0, 10, 0, 0)
         self.gauge = RingGauge(QColor(3, 102, 214))
-        self.gauge_title = QLabel("利用率")
+        self.gauge_title = QLabel()
         self.gauge_title.setStyleSheet("QLabel{color:#666;}")
         right.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         right.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        root.addLayout(right)
+        root.addLayout(right, 0)
+        root.addStretch(1)
+        
+        self.retranslateUi()
+        
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.avg_label.setText(self.tr("平均温度"))
+        self.max_label.setText(self.tr("最大温度"))
+        self.load_label.setText(self.tr("CPU负载"))
+        self.gauge_title.setText(self.tr("利用率"))
+
     def _bar_color(self, kind: str, v: float) -> str:
         if kind == "temp":
             if v < 65:
@@ -219,7 +254,7 @@ class cpu_monitor_widget(QWidget):
         self.load_bar.setValue(int(max(0, min(100, lv))))
         color = self._bar_color("load", lv)
         self.load_bar.setStyleSheet(f"QProgressBar{{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;}} QProgressBar::chunk{{background:{color};border-radius:6px;}}")
-        self.load_label.setText("CPU负载")
+        self.load_label.setText(self.tr("CPU负载"))
         self.load_bar.setFormat(f"{lv:.1f}%" if isinstance(ld, (int, float)) else "-")
         try:
             self.gauge.setValue(cpu_util)
@@ -236,9 +271,12 @@ class memory_monitor_widget(QWidget):
     def __init__(self):
         super().__init__()
         self.setStyleSheet("QWidget{background:#fff;border:0px solid #e1e4e8;border-radius:10px;} QLabel{color:#333;}")
-        root = QHBoxLayout(self)
-        left = QVBoxLayout()
-        top = QHBoxLayout()
+        self.initUI()
+
+    def initUI(self):
+        root = QHBoxLayout(self); root.setContentsMargins(10, 10, 0, 10); root.setSpacing(10)
+        left = QVBoxLayout(); left.setContentsMargins(0, 0, 0, 0)
+        top = QHBoxLayout(); top.setContentsMargins(0, 0, 0, 0)
         self.icon = QLabel()
         self.icon.setPixmap(QIcon(get_resource_path("gui/icon/monitor_icon/host_memory.png")).pixmap(30, 30))
         self.icon.setStyleSheet("QLabel{border:0;}")
@@ -249,8 +287,8 @@ class memory_monitor_widget(QWidget):
         top.addStretch(1)
         left.addLayout(top)
         row_width = 120
-        self.v_row = QHBoxLayout()
-        self.v_label = QLabel("虚拟负载")
+        self.v_row = QHBoxLayout(); self.v_row.setContentsMargins(0, 0, 0, 0)
+        self.v_label = QLabel()
         self.v_label.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
         self.v_bar = QProgressBar()
         self.v_bar.setRange(0, 100)
@@ -263,29 +301,30 @@ class memory_monitor_widget(QWidget):
 
         self.grid = QGridLayout()
         self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setHorizontalSpacing(2)
+        self.grid.setHorizontalSpacing(10)
         self.grid.setVerticalSpacing(1)
         # 在grid布局初始化后添加：让列不自动拉伸
         self.grid.setColumnStretch(0, 0)
         self.grid.setColumnStretch(1, 0)
         self.grid.setColumnStretch(2, 0)
+        self.grid.setColumnStretch(3, 1) # Add spacer column
         # 同时给包含grid的left控件设置尺寸策略（避免父布局强制拉伸）
     
-        h0 = QLabel("")
-        h1 = QLabel("使用量")
-        h2 = QLabel("可用量")
-        for w in (h0, h1, h2):
+        self.h0 = QLabel("")
+        self.h1 = QLabel()
+        self.h2 = QLabel()
+        for w in (self.h0, self.h1, self.h2):
             w.setStyleSheet("QLabel{font-size:12px;padding:0 0 0 5px;border:0;background:#f6f8fa;}")
-        self.grid.addWidget(h0, 0, 0)
-        self.grid.addWidget(h1, 0, 1)
-        self.grid.addWidget(h2, 0, 2)
-        r1 = QLabel("物理")
-        r2 = QLabel("虚拟")
-        for w in (r1, r2):
+        self.grid.addWidget(self.h0, 0, 0)
+        self.grid.addWidget(self.h1, 0, 1)
+        self.grid.addWidget(self.h2, 0, 2)
+        self.r1 = QLabel()
+        self.r2 = QLabel()
+        for w in (self.r1, self.r2):
             w.setStyleSheet("QLabel{font-size:12px;padding:0 0px;border:0;background:#f6f8fa;}")
             w.setFixedWidth(30)
-        self.grid.addWidget(r1, 1, 0)
-        self.grid.addWidget(r2, 2, 0)
+        self.grid.addWidget(self.r1, 1, 0)
+        self.grid.addWidget(self.r2, 2, 0)
         self.p_used = QLabel("-")
         self.p_avail = QLabel("-")
         self.v_used = QLabel("-")
@@ -297,15 +336,33 @@ class memory_monitor_widget(QWidget):
         self.grid.addWidget(self.v_used, 2, 1)
         self.grid.addWidget(self.v_avail, 2, 2)
         left.addLayout(self.grid)
-        root.addLayout(left, 1)
+        root.addLayout(left, 0)
 
-        right = QVBoxLayout();right.setContentsMargins(0, 20, 0, 0)
+        right = QVBoxLayout();right.setContentsMargins(0, 10, 0, 0)
         self.gauge = RingGauge(QColor(3, 102, 214))
-        self.gauge_title = QLabel("占用率")
+        self.gauge_title = QLabel()
         self.gauge_title.setStyleSheet("QLabel{color:#666;}")
         right.addWidget(self.gauge, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         right.addWidget(self.gauge_title, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        root.addLayout(right)
+        root.addLayout(right, 0)
+        root.addStretch(1)
+        
+        self.retranslateUi()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self.retranslateUi()
+        super().changeEvent(event)
+
+    def retranslateUi(self):
+        self.title.setText(self.tr("通用内存"))
+        self.v_label.setText(self.tr("虚拟负载"))
+        self.h1.setText(self.tr("使用量"))
+        self.h2.setText(self.tr("可用量"))
+        self.r1.setText(self.tr("物理"))
+        self.r2.setText(self.tr("虚拟"))
+        self.gauge_title.setText(self.tr("占用率"))
+
     def _color_for(self, v: float) -> QColor:
         if v < 75:
             return QColor(0, 155, 85)
@@ -345,7 +402,8 @@ class gpu_monitor_widget(QWidget):
         self._ensure_blocks(max(1, int(n)))
     def _ensure_blocks(self, n: int):
         while len(self.blocks) < n:
-            blk = MetricBlock(f"GPU {len(self.blocks)}", QIcon(get_resource_path("gui/icon/monitor_icon/gpu.png")), "显存使用率")
+            # Removed caption argument
+            blk = MetricBlock(f"{self.tr('GPU')} {len(self.blocks)}", QIcon(get_resource_path("gui/icon/monitor_icon/gpu.png")))
             self.blocks.append(blk)
             self.root.addWidget(blk)
         while len(self.blocks) > n:
@@ -358,7 +416,7 @@ class gpu_monitor_widget(QWidget):
         if not ds:
             self._ensure_blocks(1)
             blk = self.blocks[0]
-            blk.title.setText("GPU")
+            blk.title.setText(self.tr("GPU"))
             blk.extra.setText("")
             blk.util_bar.setValue(0)
             blk.util_bar.setStyleSheet("QProgressBar{border:0px solid #e1e4e8;border-radius:6px;height:12px;background:#f5f6f8;} QProgressBar::chunk{background:#e1e4e8;border-radius:6px;}")
@@ -373,7 +431,7 @@ class gpu_monitor_widget(QWidget):
         self._ensure_blocks(len(ds))
         for i, d in enumerate(ds):
             blk = self.blocks[i]
-            blk.title.setText(f"GPU {i}")
+            blk.title.setText(f"{self.tr('GPU')} {i}")
             nm = d.get("name") or ""
             blk.extra.setText(nm)
             util = float(d.get("utilization") or 0.0)
@@ -412,11 +470,13 @@ class MonitorWidget(QWidget):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        v = QVBoxLayout(self)
+        v = QVBoxLayout(self); v.setContentsMargins(0, 0, 0, 0)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setContentsMargins(0,0,0,0)
+
         self.container = QWidget()
-        self.container_layout = QVBoxLayout(self.container)
+        self.container_layout = QVBoxLayout(self.container); self.container_layout.setContentsMargins(0, 0, 0, 0)
         self.cpu_block = cpu_monitor_widget()
         self.mem_block = memory_monitor_widget()
         self.container_layout.addWidget(self.cpu_block)
@@ -424,6 +484,7 @@ class MonitorWidget(QWidget):
         self.gpu_block = gpu_monitor_widget()
         self.container_layout.addWidget(self.gpu_block)
         self.container_layout.addStretch(1)
+        
         self.scroll_area.setWidget(self.container)
         v.addWidget(self.scroll_area)
         self.timer = QtCore.QTimer(self)
@@ -442,3 +503,32 @@ class MonitorWidget(QWidget):
             self.gpu_block.refresh()
         except Exception:
             pass
+
+    def retranslateUi(self):
+        if hasattr(self.cpu_block, "retranslateUi"):
+            self.cpu_block.retranslateUi()
+        if hasattr(self.mem_block, "retranslateUi"):
+            self.mem_block.retranslateUi()
+        # gpu_block updates content dynamically in refresh, so we call it
+        self.gpu_block.refresh()
+
+    def get_optimal_width(self):
+        """Calculate the optimal width to display all content without horizontal scrolling."""
+        # Force update geometries
+        self.cpu_block.adjustSize()
+        self.mem_block.adjustSize()
+        self.gpu_block.adjustSize()
+        
+        w = 0
+        # Check minimum size hint of each block
+        for widget in [self.cpu_block, self.mem_block, self.gpu_block]:
+            # Use sizeHint if minimumSizeHint is too small (e.g. uninitialized), 
+            # but minimumSizeHint is preferred for layouts with stretch
+            sw = widget.minimumSizeHint().width()
+            if sw < 100: 
+                sw = widget.sizeHint().width()
+            w = max(w, sw)
+            
+        # Add padding for scrollbar (approx 20px) and margins
+        # Reduced padding since margins are removed
+        return w + 10
