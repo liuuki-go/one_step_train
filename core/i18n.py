@@ -19,7 +19,9 @@ class LanguageManager(QObject):
 
     def _load_config(self):
         cfg = _load_sys_cfg()
-        self._current_lang = cfg.get("language", "zh")
+        self._current_lang = cfg.get("gui", {}).get("languages", {}).get("language", "zh")
+
+
 
     def current_lang(self):
         return self._current_lang
@@ -37,7 +39,7 @@ class LanguageManager(QObject):
         if lang != self._current_lang:
             self._current_lang = lang
             cfg = _load_sys_cfg()
-            cfg["language"] = lang
+            cfg["gui"]["languages"]["language"] = lang
             save_sys_cfg(cfg)
 
         if self._translator:

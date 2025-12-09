@@ -1,6 +1,9 @@
 import sys
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from gui.main_frame import MainFrame
+from gui.components.activation_dialog import ActivationDialog
+from core.activation import check_activation_status
+from core.i18n import LanguageManager
 from PySide6.QtGui import QIcon
 from core.monitor import Monitor
 from core.monitor import shutdown as monitor_shutdown
@@ -35,17 +38,35 @@ def main():
     #         ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE = 0，将控制台窗口隐藏
     # except Exception:
     #     pass
-    monitor = Monitor()
-    if not monitor.is_running:
-        print("Libre Hardware Monitor启动失败，程序退出")
+    
+
+
         
 
     app = QApplication(sys.argv)
+    LanguageManager.instance().install(app)
     app.setWindowIcon(QIcon(get_resource_path("gui/icon/system_icon.png")))
     try:
         app.aboutToQuit.connect(monitor_shutdown)
     except Exception:
         pass
+     # --- Activation Check ---
+    #最开始就要验证授权
+    is_valid, msg, details = check_activation_status()
+    if not is_valid:
+        # If expired or not activated, show the dialog
+        # If expired, we might want to tell the user, but the dialog is generic.
+        # We can pass the message to the dialog if we want, but currently it just shows "Not activated or expired".
+        dialog = ActivationDialog()
+        result = dialog.exec()
+        if result != 1: # 1 is QDialog.Accepted
+            monitor_shutdown()
+            sys.exit(0)
+
+            
+    monitor = Monitor()
+    if not monitor.is_running:
+        print("Libre Hardware Monitor启动失败，程序退出")
     w = MainFrame()
     w.show()
     sys.exit(app.exec())

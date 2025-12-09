@@ -46,9 +46,6 @@ class MainFrame(QMainWindow):
         self.resize(1220, 650)  #设置初始窗口大小
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         
-        # Initialize language from config
-        LanguageManager.instance().install(QCoreApplication.instance())
-        
         self._init_ui()  
         self.dataset_root = None 
         self.dataset_yaml = None
@@ -282,13 +279,11 @@ class MainFrame(QMainWindow):
         if lang == "en":
             self.left_container.setFixedWidth(160)
             target_w = 160 + 800 + right_w
-            print(target_w)
             self.resize(target_w, 650)
         if lang == "zh":
             self.left_container.setFixedWidth(120)
             target_w = 120 + 800 + right_w
             self.resize(target_w, 650)
-            print(target_w)
 
 
     def _on_dataset_built(self, src: str, cls: str, ratios: tuple, out_dir: str, fmt: str, persist: bool = False):

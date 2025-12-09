@@ -4,6 +4,10 @@ __pycache__/
 *$py.class
 core/LibreHardwareMonitor/
 # C extensions
+
+license
+**.ts
+*.csv
 *.so
 .trae/
 # Distribution / packaging

@@ -4,6 +4,25 @@ import sys
 import subprocess
 
 TRANSLATIONS = {
+    "软件激活": "Software Activation",
+    "本软件未激活或许可已过期。": "This software is not activated or the license has expired.",
+    "请联系管理员获取激活码。": "Please contact administrator for activation code.",
+    "机器码:": "Machine Code:",
+    "复制机器码": "Copy Machine Code",
+    "激活码:": "Activation Code:",
+    "在此输入激活码": "Enter Activation Code Here",
+    "退出": "Exit",
+    "激活": "Activate",
+    "复制成功": "Copy Successful",
+    "机器码已复制到剪贴板！": "Machine code copied to clipboard!",
+    "输入错误": "Input Error",
+    "请输入激活码。": "Please enter activation code.",
+    "激活成功": "Activation Successful",
+    "激活成功！\n有效期至: {}": "Activation successful!\nExpires on: {}",
+    "激活状态保存失败，请检查权限。": "Failed to save activation status. Please check permissions.",
+    "激活失败": "Activation Failed",
+    "无效的激活码。\n原因: {}": "Invalid Activation Code.\nReason: {}",
+    "激活码已过期！": "Activation code has already been used!",
     "未安装TensorRT": "TensorRT not installed",
     "TensorRT版本：": "TensorRT Version:",
     "输入设置": "Input Settings",
@@ -79,6 +98,11 @@ TRANSLATIONS = {
     "选择备份目录": "Select Backup Dir",
     "请选择有效的处理目录！": "Invalid process directory!",
     "开启备份时必须选择备份目录！": "Backup directory required!",
+    "激活码格式错误": "Invalid activation code format",
+    "签名验证失败": "Signature verification failed",
+    "解析激活码错误": "Error parsing activation code",
+    "激活码已过期或已使用！": "Activation code expired or already used!",
+    "激活成功": "Activation successful",
     "请输入要删除的标签！": "Enter labels to delete!",
     "语言": "Language",
     "系统设置": "System Settings",
@@ -171,14 +195,14 @@ def main():
     count = 0
     for context in root.findall('context'):
         for message in context.findall('message'):
-            source = message.find('source').text
+            source = message.find('source').text  #type: ignore
             translation = message.find('translation')
             
             if source in TRANSLATIONS:
-                translation.text = TRANSLATIONS[source]
+                translation.text = TRANSLATIONS[source] #type: ignore
                 # Remove 'type="unfinished"' if it exists
-                if 'type' in translation.attrib:
-                    del translation.attrib['type']
+                if 'type' in translation.attrib: #type: ignore
+                    del translation.attrib['type'] #type: ignore
                 count += 1
             else:
                 print(f"Missing translation for: {source}")
