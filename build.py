@@ -3,8 +3,9 @@ import os
 import shutil
 import sys
 import glob
+import argparse
 
-def build():
+def build(persist_build:bool=False,persist_spec:bool=False):
     # 确保清理旧的构建文件
     if os.path.exists("dist"):
         shutil.rmtree("dist")
@@ -17,6 +18,7 @@ def build():
     datas = [
         ("gui/icon", "gui/icon"),
         ("core/LibreHardwareMonitor", "core/LibreHardwareMonitor"),
+        ("resources", "resources"), # 包含翻译文件和资源
         # ("train/config", "train/config"), # 外部暴露
         # ("models", "models"),             # 外部暴露
         # ("start.py", "."),                # 外部暴露
@@ -97,7 +99,7 @@ def build():
     # 后处理：复制需要暴露给用户的资源文件到 dist/one_step_train/ 根目录
     # ---------------------------------------------------------
     print("Build complete. Copying exposed resources...")
-    dist_dir = os.path.join("dist", "one_step_train")
+    dist_dir = os.path.join("dist", "OneST")
     
     # 需要复制的文件/文件夹列表 (源路径 -> 目标相对路径)
     exposed_resources = [
@@ -124,6 +126,40 @@ def build():
         else:
             print(f"Warning: Exposed resource {src} not found!")
 
+    # ---------------------------------------------------------
+    # 安全检查：确保敏感文件未被打包
+    # ---------------------------------------------------------
+    print("Performing security check...")
+    sensitive_files = [
+        os.path.join(dist_dir, "license"),
+        os.path.join(dist_dir, "activation.history"),
+        os.path.join(dist_dir, ".activation"),
+        os.path.join(dist_dir, "tools", "activation_generator.py"),
+    ]
+    
+    for f in sensitive_files:
+        if os.path.exists(f):
+            print(f"SECURITY WARNING: Removing sensitive file found in build: {f}")
+            if os.path.isdir(f):
+                shutil.rmtree(f)
+            else:
+                os.remove(f)
+    # #不保留spec文件和build文件夹
+    # if not persist_spec:
+    #     spec_file = os.path.join(dist_dir, "OneST.spec")
+    #     if os.path.exists(spec_file):
+    #         print(f"Removing spec file: {spec_file}")
+    #         os.remove(spec_file)
+    # if not persist_build:
+    #     build_dir = os.path.join(dist_dir, "OneST")
+    #     if os.path.exists(build_dir):
+    #         print(f"Removing build directory: {build_dir}")
+    #         shutil.rmtree(build_dir)
 
 if __name__ == "__main__":
-    build()
+    p = argparse.ArgumentParser()
+    p.add_argument("--persist_build",default=False)
+    p.add_argument("--persist_spec",default=False)
+    a = p.parse_args()
+    
+    build(a.persist_build,a.persist_spec)

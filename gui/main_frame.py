@@ -43,7 +43,7 @@ class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("oneST")  #设置程序标题
-        self.resize(1220, 650)  #设置初始窗口大小
+        self.setFixedSize(1220, 650)  #设置初始窗口大小
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         
         self._init_ui()  
@@ -85,6 +85,8 @@ class MainFrame(QMainWindow):
             # 训练结束时，禁用停止按钮
             if hasattr(self.page_run, "btn_stop_train"):
                 self.page_run.btn_stop_train.setEnabled(False)
+            if hasattr(self.page_one, "btn_stop_one"):
+                self.page_one.btn_stop_train.setEnabled(False)
         except Exception:
             pass
 
@@ -102,6 +104,8 @@ class MainFrame(QMainWindow):
         cw.setStyleSheet("QWidget{background:#F8FAFC;}")
         self.setCentralWidget(cw) #设置主窗口的中心部件为cw
         root = QHBoxLayout(cw) #创建主水平布局
+        root.setContentsMargins(10, 10, 10, 10) 
+        root.setSpacing(0)
         self.left_container = QWidget() #创建左侧容器
         self.left_container.setStyleSheet("QWidget{background:#f6f8fa;border-right:2px solid #e1e4e8;}")
         left = QVBoxLayout(self.left_container)
@@ -158,7 +162,7 @@ class MainFrame(QMainWindow):
 
         self.center_container = QWidget()
         self.center_container.setStyleSheet("QWidget{background:#F8FAFC;border-right:0px solid #e1e4e8;}")
-        self.center_container.setFixedWidth(800)
+        self.center_container.setFixedWidth(780)
         center = QVBoxLayout(self.center_container)
         center.setContentsMargins(0, 0, 0, 0)
         center.setSpacing(0)
@@ -167,8 +171,8 @@ class MainFrame(QMainWindow):
         right = QVBoxLayout(self.right_container); right.setContentsMargins(0, 0, 0, 0)
         self.left_container.setFixedWidth(120)
         root.addWidget(self.left_container)
-        root.addWidget(self.center_container, 0)
-        root.addWidget(self.right_container, 1)
+        root.addWidget(self.center_container)
+        root.addWidget(self.right_container)
         
         
 
@@ -278,12 +282,14 @@ class MainFrame(QMainWindow):
 
         if lang == "en":
             self.left_container.setFixedWidth(160)
-            target_w = 160 + 800 + right_w
-            self.resize(target_w, 650)
+            target_w = 160 + 800 + right_w 
+            self.setFixedSize(target_w, 650)
+            print(target_w)
         if lang == "zh":
             self.left_container.setFixedWidth(120)
-            target_w = 120 + 800 + right_w
-            self.resize(target_w, 650)
+            target_w = 120 + 800 + right_w 
+            self.setFixedSize(target_w, 650)
+            print(target_w)
 
 
     def _on_dataset_built(self, src: str, cls: str, ratios: tuple, out_dir: str, fmt: str, persist: bool = False):
@@ -319,12 +325,14 @@ class MainFrame(QMainWindow):
         try:
             self._emit_log_to_current(self.tr("命令: ") + " ".join(cmd))
             self._set_one_button_loading(True)
+            self._set_run_button_loading(True)
             self.log_thread = LogThread(cmd)
             self.log_thread.line.connect(self._emit_log_to_current)
             self.log_thread.done.connect(self._on_train_done)
             self.log_thread.start()
         except Exception as e:
             self._set_one_button_loading(False)
+            self._set_run_button_loading(False)
             return
         
 
@@ -335,7 +343,6 @@ class MainFrame(QMainWindow):
         dataset_root, yaml_path = self._on_dataset_built(src, cls, ratios, out_dir, fmt, persist)
         if persist:
             self._emit_log_to_current(self.tr("数据集构建完成") + f" {dataset_root}")
-        
         # 启动训练
         self._on_run_requested(dataset_root, export_path)
 

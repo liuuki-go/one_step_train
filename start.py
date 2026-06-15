@@ -17,13 +17,13 @@ def train_with_cfg(data: str, export_path: str):
         name=ts,
         data=data,
     )
-    
+
     model.export(
-    format="onnx",
-    imgsz=640,
-    dynamic=True,
-    simplify=True,
-    opset=18,
+        format="onnx",
+        imgsz=640,
+        dynamic=False,
+        simplify=True,
+        opset=17,
     )
 
     return train_results

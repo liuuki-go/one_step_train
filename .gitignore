@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-core/LibreHardwareMonitor/
+core/LibreHardwareMonitor/*
 # C extensions
 
 license
@@ -198,3 +198,4 @@ wandb/
 # Dataset files (be careful with this)
 # data/
 # datasets/
+core/LibreHardwareMonitor/LibreHardwareMonitor.config
